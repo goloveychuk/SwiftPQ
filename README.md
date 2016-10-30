@@ -1,7 +1,7 @@
 # SwiftPQ
 Pure swift postgres client library
 
-It's implements frontend/backend postgres protocol ( https://www.postgresql.org/docs/current/static/protocol.html )
+It implements frontend/backend postgres protocol ( https://www.postgresql.org/docs/current/static/protocol.html )
 
 Early beginning, PRs are welcome.
 

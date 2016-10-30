@@ -15,11 +15,18 @@ func getUniqueName() -> String {
     return String(format: "n%d", n)
 }
 
+
+
+
 class Row {
-    let values:[(Int32, Data?)]
-    init(_ values: [(Int32, Data?)]) {
+    let values:[Data?]
+    init(_ values: [Data?], columns: Columns) {
         self.values = values
     }
+    subscript(id: Int) -> Data? {
+        return values[id]
+    }
+
 }
 
 class Statement {
@@ -27,13 +34,15 @@ class Statement {
     let stName: String
     let query: String
     var dest: String? = nil
+    var columns: Columns? = nil
     init(pr: Protocol, query: String) {
         self.pr = pr
         stName = getUniqueName()
         self.query = query
     }
     func parse() throws {
-        try pr.parse(statementName: "st", query: query, oids: [.Int8])
+        let fields = try pr.parse(statementName: "st", query: query, oids: [.Int8])
+        columns = Columns(fields)
     }
     
     func bind(_ args: [Data?]) throws {
@@ -52,7 +61,7 @@ class Statement {
         }
         switch msg {
         case let .DataRow(num: _, values: values):
-            return Row(values)
+            return Row(values, columns: columns!)
          default:
             print("warn")
             return nil

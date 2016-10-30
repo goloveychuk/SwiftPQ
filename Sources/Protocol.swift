@@ -13,6 +13,7 @@ typealias Byte = UInt8
 
 enum ProtocolErrors {
     case UnexpectedResp(BackendMessages)
+    case Other(String)
 }
 
 struct ErrorDescription: CustomDebugStringConvertible {
@@ -122,7 +123,7 @@ class Protocol {
 }
 
 extension Protocol {
-    func parse(statementName: String, query: String, oids: [Oid]) throws {
+    func parse(statementName: String, query: String, oids: [Oid]) throws -> [Field] {
         
         let msg = FrontendMessages.Parse(destination: statementName, query: query, numberOfParameters: Int16(oids.count), argsOids: oids.map {$0.rawValue} )
         
@@ -143,15 +144,15 @@ extension Protocol {
             switch resp {
             case .ParameterDescription:
                 break
-            case .RowDescription:
-                return
+            case let .RowDescription(fieldsNum: _, fields: fields):
+                return fields
             //case .ReadyForQuery:
               //  return
             default:
                 throw PostgresErrors.ProtocolError(.UnexpectedResp(resp))
             }
         }
-        
+        throw PostgresErrors.ProtocolError(.Other("didn't received row description"))
         
     }
     func bind(statementName: String, dest: String, args: [Data?]) throws {

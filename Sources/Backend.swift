@@ -66,7 +66,7 @@ enum BackendMessages {
     case ParameterDescription(number: Int16, oids: [Int32])
     case RowDescription(fieldsNum: Int16, fields: [Field])
     case BindComplete
-    case DataRow(num: Int16, values: [(Int32, Data?)])
+    case DataRow(num: Int16, values: [Data?])
     init?(buf : Buffer) throws {
         guard buf.haveMore else {
             return nil
@@ -149,7 +149,7 @@ enum BackendMessages {
             self = .BindComplete
         case .DataRow:
             let num = buf.getInt16()
-            var values = [(length: Int32, data: Data?)]()
+            var values = [Data?]()
             for _ in 0..<num {
                 let len = buf.getInt32()
                 var d : Data? = nil
@@ -157,7 +157,7 @@ enum BackendMessages {
                     d = buf.getBytes(Int(len))
                     //print(String(data: d!, encoding: String.Encoding.utf8))
                 }
-                values.append((length: len, data: d))
+                values.append(d)
             }
             self = .DataRow(num: num, values: values)
         }

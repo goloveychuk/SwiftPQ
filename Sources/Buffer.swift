@@ -8,25 +8,7 @@
 
 import Foundation
 
-protocol Endianess {
-    associatedtype T
-    var bigEndian: T { get }
-}
 
-
-extension Endianess {
-    var toBytes: Data {
-        var newV = self.bigEndian
-        return Data(bytes: &newV, count: MemoryLayout<T>.size)
-    }
-}
-
-extension Int32: Endianess {}
-extension Int16: Endianess {}
-
-extension Int: Endianess{}
-
-extension Int64: Endianess {}
 
 class Buffer {
     var buffer: Data
@@ -93,26 +75,14 @@ class Buffer {
         return d
     }
     func getInt32() -> Int32 {
-        var v: Int32 = 0
-        withUnsafeMutablePointer(to: &v) {
-            $0.withMemoryRebound(to: Byte.self, capacity: 1) { //not sure what capacity is
-                let curRight = cursor+MemoryLayout<Int32>.size
-                buffer.copyBytes(to: $0, from: cursor..<curRight)
-            }
-        }
-        cursor += MemoryLayout<Int32>.size
-        return Int32(bigEndian: v)
+        let newC = cursor+MemoryLayout<Int32>.size
+        defer { cursor = newC }
+        return Int32(fromBytes: buffer.subdata(in: cursor..<newC))
     }
     func getInt16() -> Int16 {//todo refactor
-        var v: Int16 = 0
-        withUnsafeMutablePointer(to: &v) {
-            $0.withMemoryRebound(to: Byte.self, capacity: MemoryLayout<Int16>.size) {
-                let curRight = cursor+MemoryLayout<Int16>.size
-                buffer.copyBytes(to: $0, from: cursor..<curRight)
-            }
-        }
-        cursor += MemoryLayout<Int16>.size
-        return Int16(bigEndian: v)
+        let newC = cursor+MemoryLayout<Int16>.size
+        defer { cursor = newC }
+        return Int16(fromBytes: buffer.subdata(in: cursor..<newC))
     }
     func getString() -> String {
         var newCursor = cursor

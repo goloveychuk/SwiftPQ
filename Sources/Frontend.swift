@@ -29,22 +29,6 @@ enum Formats: Int16 {
     case Binary = 1
     case Text = 0
 }
-//https://github.com/postgres/postgres/blob/master/src/include/catalog/pg_type.h
-enum Oid: Int32 {
-    case Bool = 16
-    //case Bytea = 17
-    case Char = 18
-    case Int8 = 20
-    case Int2 = 21
-    case Int4 = 23
-    case Text = 25
-    //case Oid = 26
-    //case Json = 114
-    //case Xml = 142
-    case Float4 = 700
-    case Float8 = 701
-    case Timestampz = 1184
-}
 
 
  enum FrontendMessages {
