@@ -27,8 +27,10 @@ try st.execute()
 
 
 for i in 0..<10 {
-    let row = try st.getRow()
-    print(row)
+    let row = try st.getRow()!
+    let id: Int32? = row.val(0)
+    let sourceId: Int32? = row.val(1)
+    print(id, sourceId)
 }
 
 

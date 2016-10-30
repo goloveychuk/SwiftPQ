@@ -23,8 +23,15 @@ class Row {
     init(_ values: [Data?], columns: Columns) {
         self.values = values
     }
-    subscript(id: Int) -> Data? {
-        return values[id]
+    subscript(ind: Int) -> Data? {
+        return values[ind]
+    }
+    func val<T: PostgresTypeConvertible>(_ ind: Int) -> T? {
+        guard let x = values[ind] else {
+            return nil
+        }
+        
+        return T(fromBytes: x) ////////check oid
     }
 
 }

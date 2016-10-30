@@ -30,15 +30,6 @@ enum Oid: Int32 {
 
 
 
-protocol PostgresTypeConvertable {
-    
-}
-
-extension Int: PostgresTypeConvertable {
-    
-}
-
-
 
 protocol PostgresTypeConvertible {
     
