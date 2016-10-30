@@ -155,7 +155,7 @@ enum BackendMessages {
                 var d : Data? = nil
                 if len != -1 {
                     d = buf.getBytes(Int(len))
-                    print(String(data: d!, encoding: String.Encoding.utf8))
+                    //print(String(data: d!, encoding: String.Encoding.utf8))
                 }
                 values.append((length: len, data: d))
             }

@@ -11,21 +11,28 @@ import Foundation
 import TCP
 
 protocol Socket {
-    func write(_ data: Data) throws
+    func write(_ msgs: FrontendMessages...) throws
     func read() throws -> Data
     init(host: String, port: Int) throws
     func flush() throws
 }
 
-let BATCH_SIZE = 10000
+let BATCH_SIZE = 10000000
 
 class LibmillSocket: Socket {
     let socket: TCPStream
-    func write(_ data: Data) throws {
-        try data.withUnsafeBytes { (p: UnsafePointer<Byte>) -> Void in
-            let bp = UnsafeBufferPointer(start: p, count: data.count)
-            try self.socket.write(bp, deadline: -1)
+    func write(_ msgs: FrontendMessages...) throws {
+        for i in msgs {
+            print("debug, sent", i)
+            try write(data: i.buf())
         }
+        
+    }
+    fileprivate func write(data: Data) throws {
+        try data.withUnsafeBytes { (p: UnsafePointer<Byte>) -> Void in
+        let bp = UnsafeBufferPointer(start: p, count: data.count)
+        try self.socket.write(bp, deadline: -1)
+    }
     }
     func read() throws -> Data {
         var allData = Data()
@@ -33,9 +40,9 @@ class LibmillSocket: Socket {
             let buf = try self.socket.read(upTo: BATCH_SIZE, deadline: -1)
             
             allData.append(contentsOf: buf)
-            if buf.count < 8192 {
-                break
-            }
+            //if buf.count < 8192 {
+              break
+            //}
             
         }
         return allData

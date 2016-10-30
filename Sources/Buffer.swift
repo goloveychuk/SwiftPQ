@@ -24,6 +24,9 @@ extension Endianess {
 extension Int32: Endianess {}
 extension Int16: Endianess {}
 
+extension Int: Endianess{}
+
+extension Int64: Endianess {}
 
 class Buffer {
     var buffer: Data
@@ -66,7 +69,7 @@ class Buffer {
     }
     func buf() -> Data {
         if let lengthInd = lengthInd {
-            print("count", buffer.count)
+            //print("count", buffer.count)
             self.buffer.replaceSubrange(lengthInd..<lengthInd+MemoryLayout<Int32>.size, with: Int32(self.buffer.count-lengthInd).toBytes)
         }
         return self.buffer

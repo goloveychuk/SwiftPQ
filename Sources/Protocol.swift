@@ -11,6 +11,27 @@ import CryptoSwift
 
 typealias Byte = UInt8
 
+enum ProtocolErrors {
+    case UnexpectedResp(BackendMessages)
+}
+
+struct ErrorDescription: CustomDebugStringConvertible {
+    let pairs: [(Byte, String)]
+    init(_ pairs: [(Byte, String)]) {
+        self.pairs = pairs
+    }
+    public var debugDescription: String {
+        return pairs.debugDescription
+    }
+}
+
+enum PostgresErrors: Error {
+    case ProtocolError(ProtocolErrors)
+    case AuthError(ErrorDescription)
+    case ParseError(ErrorDescription)
+    case BindError(ErrorDescription)
+    case ExecuteError(ErrorDescription)
+}
 
 
 
@@ -18,88 +39,157 @@ typealias Byte = UInt8
 
 class Protocol {
     let socket: Socket
-    var password: String?
-    var user: String?
+    var buffer: Buffer? = nil
     init(socket: Socket) {
         self.socket = socket
     }
-    func startup(user: String, database: String?, password: String?) {
+    func startup(user: String, database: String, password: String) throws {
         let msg = FrontendMessages.StartupMessage(user: user, database: database)
-        let buf = msg.buf()
-        
-        try! socket.write(buf)
-        try! socket.flush()
-        self.password = password
-        self.user = user
-        read()
+        try socket.write(msg)
+        try socket.flush()
+        let resp = try readMsg()!
+        switch  resp {
+        case .AuthenticationOk:
+            break
+        case let .AuthenticationMD5Password(salt: salt):
+            try authMd5(user: user, password: password, salt: salt)
+        case .AuthenticationCleartextPassword:
+            try authPlain(password: password)
+        default:
+            throw PostgresErrors.ProtocolError(.UnexpectedResp(resp))
+        }
+        while let resp = try readMsg() {
+            switch resp {
+            case .ParameterStatus:
+                break
+            case .BackendKeyData:
+                break
+            case .ReadyForQuery:
+                return
+            default:
+                throw PostgresErrors.ProtocolError(.UnexpectedResp(resp))
+            }
+        }
         
     }
-    func read() {
-        let resp = try! socket.read()
-        let msgIn = Buffer(resp)
-        while true {
-            guard let msg = try! BackendMessages(buf: msgIn) else {
-                break
-            }
-            print(msg)
-            switch msg {
-            case let .AuthenticationMD5Password(salt: salt):
-                authMd5(salt: salt)
-            case .AuthenticationCleartextPassword:
-                authPlain()
-            default:
-                break
-            }
+    func readMsg() throws -> BackendMessages?  {
+        if buffer == nil {
+            let d = try socket.read()
+            buffer = Buffer(d)
+        }
+        let msg = try! BackendMessages(buf: buffer!)
+        if !buffer!.haveMore {
+            buffer = nil
+        }
+        print("debug, msg", msg)
+        return msg
+
+    }
+    func authPlain(password: String) throws {
+        let msg = FrontendMessages.PasswordMessage(password: password)
+        try socket.write(msg)
+        try socket.flush()
+        let resp = try readMsg()!
+        switch resp {
+        case .AuthenticationOk:
+            return
+        case let .ErrorResponse(pairs: pairs):
+            throw PostgresErrors.AuthError(ErrorDescription(pairs))
+        default:
+            throw PostgresErrors.ProtocolError(.UnexpectedResp(resp))
+        }
+        
+
+    }
+    func authMd5(user: String, password: String, salt: Data) throws{
+        let c1 = (password + user).md5()
+        let pass = "md5" + (c1.utf8+salt).md5().toHexString()
+        let msg = FrontendMessages.PasswordMessage(password: pass)
+        try socket.write(msg)
+        try socket.flush()
+        
+        let resp = try readMsg()!
+        switch resp {
+        case .AuthenticationOk:
+            return
+        case let .ErrorResponse(pairs: pairs):
+            throw PostgresErrors.AuthError(ErrorDescription(pairs))
+        default:
+            throw PostgresErrors.ProtocolError(.UnexpectedResp(resp))
         }
 
     }
-    func authPlain() {
-        let msg = FrontendMessages.PasswordMessage(password: self.password!)
-        let buf = msg.buf()
-        try! socket.write(buf)
-        try! socket.flush()
-        read()
-    }
-    func authMd5(salt: Data) {
-        
-        let c1 = (self.password! + self.user!).md5()
-        let pass = "md5" + (c1.utf8+salt).md5().toHexString()
-        
-        let msg = FrontendMessages.PasswordMessage(password: pass)
-    
-        let buf = msg.buf()
-        try! socket.write(buf)
-        try! socket.flush()
-
-        read()
-    }
-    
 }
 
 extension Protocol {
-    func parse(_ query: String ) {
-        let statementName = "dest"
-        let msg = FrontendMessages.Parse(destination: statementName, query: query, numberOfParameters: 0, argsOids: [])
+    func parse(statementName: String, query: String, oids: [Oid]) throws {
         
-        let msg2 = FrontendMessages.Describe(name: statementName)
+        let msg = FrontendMessages.Parse(destination: statementName, query: query, numberOfParameters: Int16(oids.count), argsOids: oids.map {$0.rawValue} )
         
-        let msg3 = FrontendMessages.Sync
-        try! socket.write(msg.buf())
-        try! socket.write(msg2.buf())
-        try! socket.write(msg3.buf())
-        try! socket.flush()
-        read()
-    let dest = "asdasd"
-        let msg4 = FrontendMessages.Bind(destinationName: dest, statementName: statementName, numberOfParametersFormatCodes: 1, paramsFormats: [.Binary], numberOfParameterValues: 0, parameters: [], numberOfResultsFormatCodes: 1, resultFormats: [.Text])
+        try socket.write(msg, .Describe(name: statementName), .Sync)
+        try socket.flush()
         
-        try! socket.write(msg4.buf())
+        let resp = try readMsg()!
+        switch resp {
+        case .ParseComplete:
+            break
+        case let .ErrorResponse(pairs: pairs):
+            throw PostgresErrors.ParseError(ErrorDescription(pairs))
+        default:
+            throw PostgresErrors.ProtocolError(.UnexpectedResp(resp))
+        }
+        
+        while let resp = try readMsg() {
+            switch resp {
+            case .ParameterDescription:
+                break
+            case .RowDescription:
+                break
+            case .ReadyForQuery:
+                return
+            default:
+                throw PostgresErrors.ProtocolError(.UnexpectedResp(resp))
+            }
+        }
         
         
-        let msg5 = FrontendMessages.Execute(name: dest, maxRowNums: 0)
+    }
+    func bind(statementName: String, dest: String, args: [Data?]) throws {
+        let params = args.map { (Int32($0?.count ?? -1), $0) }
+        let msg = FrontendMessages.Bind(destinationName: dest, statementName: statementName, numberOfParametersFormatCodes: 1, paramsFormats: [.Binary], numberOfParameterValues: Int16(args.count), parameters: params, numberOfResultsFormatCodes: 1, resultFormats: [.Binary])
+        try socket.write(msg, .Sync)
+        try socket.flush()
+        let resp = try readMsg()!
+        switch resp {
+        case .BindComplete:
+            break
+        case let .ErrorResponse(pairs: pairs):
+            throw PostgresErrors.BindError(ErrorDescription(pairs))
+        default:
+            throw PostgresErrors.ProtocolError(.UnexpectedResp(resp))
+        }
         
-        try! socket.write(msg5.buf())
-        try! socket.flush()
-        read()
+        let resp2 = try readMsg()!
+        switch resp2 {
+        case .ReadyForQuery:
+            break
+        default:
+            throw PostgresErrors.ProtocolError(.UnexpectedResp(resp))
+        }
+    }
+    func execute(dest: String) throws {
+        
+        try socket.write(.Execute(name: dest, maxRowNums: 0), .Sync)
+        try socket.flush()
+        let resp = try readMsg()!
+        switch resp {
+        case .ReadyForQuery:
+            return
+        case let .ErrorResponse(pairs: pairs):
+            throw PostgresErrors.ExecuteError(ErrorDescription(pairs))
+        default:
+            throw PostgresErrors.ProtocolError(.UnexpectedResp(resp))
+        }
     }
     
 }
