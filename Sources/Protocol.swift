@@ -126,7 +126,7 @@ extension Protocol {
         
         let msg = FrontendMessages.Parse(destination: statementName, query: query, numberOfParameters: Int16(oids.count), argsOids: oids.map {$0.rawValue} )
         
-        try socket.write(msg, .Describe(name: statementName), .Sync)
+        try socket.write(msg, .Describe(name: statementName), .Flush)
         try socket.flush()
         
         let resp = try readMsg()!
@@ -144,9 +144,9 @@ extension Protocol {
             case .ParameterDescription:
                 break
             case .RowDescription:
-                break
-            case .ReadyForQuery:
                 return
+            //case .ReadyForQuery:
+              //  return
             default:
                 throw PostgresErrors.ProtocolError(.UnexpectedResp(resp))
             }
@@ -157,7 +157,7 @@ extension Protocol {
     func bind(statementName: String, dest: String, args: [Data?]) throws {
         let params = args.map { (Int32($0?.count ?? -1), $0) }
         let msg = FrontendMessages.Bind(destinationName: dest, statementName: statementName, numberOfParametersFormatCodes: 1, paramsFormats: [.Binary], numberOfParameterValues: Int16(args.count), parameters: params, numberOfResultsFormatCodes: 1, resultFormats: [.Binary])
-        try socket.write(msg, .Sync)
+        try socket.write(msg, .Flush)
         try socket.flush()
         let resp = try readMsg()!
         switch resp {
@@ -169,27 +169,12 @@ extension Protocol {
             throw PostgresErrors.ProtocolError(.UnexpectedResp(resp))
         }
         
-        let resp2 = try readMsg()!
-        switch resp2 {
-        case .ReadyForQuery:
-            break
-        default:
-            throw PostgresErrors.ProtocolError(.UnexpectedResp(resp))
-        }
     }
     func execute(dest: String) throws {
         
-        try socket.write(.Execute(name: dest, maxRowNums: 0), .Sync)
+        try socket.write(.Execute(name: dest, maxRowNums: 0), .Flush)
         try socket.flush()
-        let resp = try readMsg()!
-        switch resp {
-        case .ReadyForQuery:
-            return
-        case let .ErrorResponse(pairs: pairs):
-            throw PostgresErrors.ExecuteError(ErrorDescription(pairs))
-        default:
-            throw PostgresErrors.ProtocolError(.UnexpectedResp(resp))
-        }
+        
     }
     
 }

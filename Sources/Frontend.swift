@@ -126,6 +126,7 @@ enum Oid: Int32 {
             }
         case .Flush:
             msg.addType(FrontendMessageTypes.Flush)
+            msg.addLen()
         }
         return msg.buf()
     }
