@@ -71,6 +71,15 @@ extension Int: NumericalPostgresType {
 extension Int16: NumericalPostgresType {
     
 }
+extension String {
+    init?(fromBytes: Data) {
+        self.init(data: fromBytes, encoding: String.Encoding.utf8)
+    }
+}
 
-
+extension Bool {
+    init(fromBytes: Data) {
+        self.init(fromBytes[0]==1)
+    }
+}
 
