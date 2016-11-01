@@ -25,7 +25,15 @@ enum Oid: Int32 {
     //case Xml = 142
     case Float4 = 700
     case Float8 = 701
+    
+    case VarChar = 1043
+    
+    case Date = 1082
+    case Time = 1083
+    case TimeTz = 1266
+    case Timestamp = 1114
     case Timestampz = 1184
+    case Interval = 1186
 }
 
 
@@ -62,7 +70,9 @@ extension NumericalPostgresType {
 extension Int32: NumericalPostgresType {
     
 }
-
+extension Int64: NumericalPostgresType {
+    
+}
 
 extension Int: NumericalPostgresType {
     

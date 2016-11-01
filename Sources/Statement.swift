@@ -18,56 +18,6 @@ func getUniqueName() -> String {
 
 
 
-
-class Row {
-    let values:[Data?]
-    let columns: Columns
-    init(_ values: [Data?], columns: Columns) {
-        self.values = values
-        self.columns = columns
-    }
-    subscript(ind: Int) -> Data? {
-        return values[ind]
-    }
-    func val<T: PostgresTypeConvertible>(_ ind: Int) -> T? {
-        guard let x = values[ind] else {
-            return nil
-        }
-        
-        return T(fromBytes: x) ////////check oid
-    }
-    func toStruct<T>() throws -> T {
-        var dict = [String: Any]()
-        for (ind, c) in columns.list.enumerated() {
-            guard let d = values[ind] else {
-                dict[c.name] = nil
-                continue
-            }
-            switch c.typeOid {
-            case .Int4:
-                let v = Int(Int32(fromBytes: d))
-                dict[c.name] = v
-            case .Int2:
-                let v = Int(Int16(fromBytes: d))
-                dict[c.name] = v
-            case .Int8:
-                let v = Int(fromBytes: d)
-                dict[c.name] = v
-            case .Text:
-                let v = String(fromBytes: d)
-                dict[c.name] = v
-            case .Bool:
-                let v = Bool(fromBytes: d)
-                dict[c.name] = v
-            default:
-                break
-            }
-        }
-        return try construct(dictionary: dict)
-    }
-
-}
-
 class Statement {
     private let pr: Protocol
     let stName: String
