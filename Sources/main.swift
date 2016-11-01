@@ -34,17 +34,18 @@ struct Car {
     let sold: Bool
     
 }
-var s: Int = 0
-
+//var s: Int = 0
+var nn = 0
 while let row = try st.getRow() {
     //let id: Int32? = row.val(0)
     //let sourceId: Int32? = row.val(1)
-    let d = row.dict
-    s += d["id"] as! Int
+    //let d = row.dict
+    //s += d["id"] as! Int
     //print(d)
+    nn += 1
 }
 
-
+print(nn)
 
 
 

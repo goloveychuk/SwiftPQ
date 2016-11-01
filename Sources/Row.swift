@@ -14,7 +14,7 @@ import Foundation
 
 
 
-class Row {
+public  class Row {
     let values:[Data?]
     let columns: Columns
     init(_ values: [Data?], columns: Columns) {

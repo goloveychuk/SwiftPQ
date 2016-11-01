@@ -18,7 +18,7 @@ func getUniqueName() -> String {
 
 
 
-class Statement {
+public  class Statement {
     private let pr: Protocol
     let stName: String
     let query: String
@@ -29,20 +29,20 @@ class Statement {
         stName = getUniqueName()
         self.query = query
     }
-    func parse() throws {
+    public  func parse() throws {
         let fields = try pr.parse(statementName: "st", query: query, oids: [.Int8])
         columns = Columns(fields)
     }
     
-    func bind(_ args: [Data?]) throws {
+   public  func bind(_ args: [Data?]) throws {
         dest = getUniqueName()
         try pr.bind(statementName: "st", dest: "dest", args: args)
     }
-    func execute() throws {
+   public  func execute() throws {
         try pr.execute(dest: "dest")
     }
     
-    func getRow() throws -> Row? {
+   public  func getRow() throws -> Row? {
         let msg = try pr.readMsgForce()
         switch msg {
         case let .DataRow(num: _, values: values):
