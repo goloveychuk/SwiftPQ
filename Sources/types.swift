@@ -57,6 +57,7 @@ extension NumericalPostgresType {
         return Data(bytes: &newV, count: MemoryLayout<T>.size)
     }
     init(fromBytes: Data) {
+        
         var v: T = 0
         withUnsafeMutablePointer(to: &v) {
            $0.withMemoryRebound(to: Byte.self, capacity: MemoryLayout<T>.size) {

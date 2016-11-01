@@ -44,12 +44,10 @@ enum Formats: Int16 {
     )
     case Flush
     
-    func buf() -> Data {
-        let msg = Buffer()
-        
+    func buf() -> WriteBuffer {
         switch self {
         case let .StartupMessage(user: user, database: database):
-            msg.addLen()
+            let msg = WriteBuffer(nil)
             msg.addInt32(PROTOCOL_VERSION)
             msg.addString("user")
             msg.addString(user)
@@ -58,39 +56,40 @@ enum Formats: Int16 {
                 msg.addString(database)
             }
             msg.addNull()
+            return msg
             
         case let .PasswordMessage(password: password):
-            msg.addType(FrontendMessageTypes.PasswordMessage)
-            msg.addLen()
+            let msg = WriteBuffer(.PasswordMessage)
             msg.addString(password)
+            return msg
             
         case let .Parse(destination: dest, query: q, numberOfParameters: num, argsOids: oids):
-            msg.addType(FrontendMessageTypes.Parse)
-            msg.addLen()
+            let msg = WriteBuffer(.Parse)
             msg.addString(dest)
             msg.addString(q)
             msg.addInt16(num)
             for oid in oids {
                 msg.addInt32(oid)
             }
+            return msg
+            
         case let .Describe(name: name):
-            msg.addType(FrontendMessageTypes.Describe)
-            msg.addLen()
+            let msg = WriteBuffer(.Describe)
             msg.addByte1(Byte(ascii: "S"))
             msg.addString(name)
+            return msg
         case .Sync:
-            msg.addType(FrontendMessageTypes.Sync)
-            msg.addLen()
+            let msg = WriteBuffer(.Sync)
+            return msg
         case let .Execute(name: name, maxRowNums: mx):
-            msg.addType(FrontendMessageTypes.Execute)
-            msg.addLen()
+            let msg = WriteBuffer(.Execute)
             msg.addString(name)
             msg.addInt32(mx)
+            return msg
         case let .Bind(destinationName: dest, statementName: st,
         numberOfParametersFormatCodes: numParamCodes, paramsFormats: paramsFormats, numberOfParameterValues: numParamVals, parameters: params,
         numberOfResultsFormatCodes: numResCodes, resultFormats: resFormats):
-            msg.addType(FrontendMessageTypes.Bind)
-            msg.addLen()
+            let msg = WriteBuffer(.Bind)
             msg.addString(dest)
             msg.addString(st)
             msg.addInt16(numParamCodes)
@@ -108,10 +107,10 @@ enum Formats: Int16 {
             for i in resFormats {
                 msg.addInt16(i.rawValue)
             }
+            return msg
         case .Flush:
-            msg.addType(FrontendMessageTypes.Flush)
-            msg.addLen()
+            let msg = WriteBuffer(.Flush)
+            return msg
         }
-        return msg.buf()
     }
 }

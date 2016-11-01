@@ -9,6 +9,19 @@
 import Foundation
 
 
+class Transaction {
+    func commit() {
+        
+    }
+    func rollback() {
+        
+    }
+    func cursor() {
+        
+    }
+    
+}
+
 
 class Connection {
     private let pr: Protocol
@@ -24,4 +37,12 @@ class Connection {
     func statement(query: String) -> Statement {
         return Statement(pr: pr, query: query)
     }
+    func transaction() -> Transaction {
+        return Transaction()
+    }
+    func close() {
+        
+    }
 }
+
+

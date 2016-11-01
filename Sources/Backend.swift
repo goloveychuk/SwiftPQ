@@ -67,15 +67,9 @@ enum BackendMessages {
     case RowDescription(fieldsNum: Int16, fields: [Field])
     case BindComplete
     case DataRow(num: Int16, values: [Data?])
-    init?(buf : Buffer) throws {
-        guard buf.haveMore else {
-            return nil
-        }
-        let type = buf.getByte1()
-        guard let msgType = BackendMsgTypes(rawValue: UnicodeScalar(type)) else {
-            throw Errors.badMsgType(type)
-        }
-        let _ = buf.getInt32()
+    init(msgType : BackendMsgTypes, buf: ReadBuffer) throws {
+        
+        
         switch msgType {
         case .Authentication:
             let d1 = buf.getInt32()
@@ -113,7 +107,7 @@ enum BackendMessages {
                 let val = buf.getString()
                 pairs.append((fType, val))
             }
-            buf.skipByte()
+            buf.skip()
             self = .ErrorResponse(pairs: pairs )
         case .CommandComplete:
             let tag = buf.getString()

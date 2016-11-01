@@ -40,15 +40,47 @@ enum PostgresErrors: Error {
 
 class Protocol {
     let socket: Socket
-    var buffer: Buffer? = nil
+    var buffer: ReadBuffer
     init(socket: Socket) {
         self.socket = socket
+        self.buffer = ReadBuffer()
     }
+    func readMsgForce() throws -> BackendMessages {
+        var msgType = try buffer.unpack()
+        if msgType == nil {
+            let d = try socket.read()
+            
+            buffer.append(d)
+            msgType = try buffer.unpack()
+        }
+        
+        let msg = try! BackendMessages(msgType: msgType!, buf: buffer)
+        //print("debug, msg", msg)
+        return msg
+    }
+    
+    func readMsg() throws -> BackendMessages?  {
+        guard !buffer.isEmpty else {
+            buffer.clean()
+            return nil
+        }
+        return try readMsgForce()
+    }
+}
+///async messages
+extension Protocol {
+    func readAsync() {
+        
+    }
+}
+
+//////////startup
+extension Protocol {
     func startup(user: String, database: String, password: String) throws {
         let msg = FrontendMessages.StartupMessage(user: user, database: database)
         try socket.write(msg)
         try socket.flush()
-        let resp = try readMsg()!
+        let resp = try readMsgForce()
         switch  resp {
         case .AuthenticationOk:
             break
@@ -73,24 +105,18 @@ class Protocol {
         }
         
     }
-    func readMsg() throws -> BackendMessages?  {
-        if buffer == nil {
-            let d = try socket.read()
-            buffer = Buffer(d)
-        }
-        let msg = try! BackendMessages(buf: buffer!)
-        if !buffer!.haveMore {
-            buffer = nil
-        }
-        print("debug, msg", msg)
-        return msg
 
-    }
+}
+
+
+
+//////////////auth
+extension Protocol {
     func authPlain(password: String) throws {
         let msg = FrontendMessages.PasswordMessage(password: password)
         try socket.write(msg)
         try socket.flush()
-        let resp = try readMsg()!
+        let resp = try readMsgForce()
         switch resp {
         case .AuthenticationOk:
             return
@@ -99,8 +125,6 @@ class Protocol {
         default:
             throw PostgresErrors.ProtocolError(.UnexpectedResp(resp))
         }
-        
-
     }
     func authMd5(user: String, password: String, salt: Data) throws{
         let c1 = (password + user).md5()
@@ -109,7 +133,7 @@ class Protocol {
         try socket.write(msg)
         try socket.flush()
         
-        let resp = try readMsg()!
+        let resp = try readMsgForce()
         switch resp {
         case .AuthenticationOk:
             return
@@ -122,6 +146,9 @@ class Protocol {
     }
 }
 
+
+
+/////queries
 extension Protocol {
     func parse(statementName: String, query: String, oids: [Oid]) throws -> [Field] {
         
@@ -130,7 +157,7 @@ extension Protocol {
         try socket.write(msg, .Describe(name: statementName), .Flush)
         try socket.flush()
         
-        let resp = try readMsg()!
+        let resp = try readMsgForce()
         switch resp {
         case .ParseComplete:
             break
@@ -160,7 +187,7 @@ extension Protocol {
         let msg = FrontendMessages.Bind(destinationName: dest, statementName: statementName, numberOfParametersFormatCodes: 1, paramsFormats: [.Binary], numberOfParameterValues: Int16(args.count), parameters: params, numberOfResultsFormatCodes: 1, resultFormats: [.Binary])
         try socket.write(msg, .Flush)
         try socket.flush()
-        let resp = try readMsg()!
+        let resp = try readMsgForce()
         switch resp {
         case .BindComplete:
             break

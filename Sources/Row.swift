@@ -43,7 +43,7 @@ class Row {
                 let v = Int(Int32(fromBytes: d))
                 dict[c.name] = v
             case .Int2:
-                let v = Int(Int16(fromBytes: d))
+                let v = Int(Int16(fromBytes: d)) //todo 64/32 bit systems
                 dict[c.name] = v
             case .Int8:
                 let v = Int(fromBytes: d)
@@ -54,7 +54,7 @@ class Row {
             case .Bool:
                 let v = Bool(fromBytes: d)
                 dict[c.name] = v
-            case .Timestampz:
+            case .Timestampz: //todo infinity
                 let microseconds = Int64(fromBytes: d)
                 let ti = TimeInterval(Double(microseconds)/1_000_000.0)
                 let dc = DateComponents(timeZone: TimeZone(identifier: "UTC"), year: 2000)
@@ -63,7 +63,7 @@ class Row {
                     ti, since: sinceDate)
                 dict[c.name] = d
                 
-            case .Timestamp: //didn't tested
+            case .Timestamp: //todo teste
                 let microseconds = Int64(fromBytes: d)
                 let ti = TimeInterval(Double(microseconds)/1_000_000.0)
                 let dc = DateComponents(timeZone: TimeZone.current, year: 2000)

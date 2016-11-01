@@ -43,17 +43,14 @@ class Statement {
     }
     
     func getRow() throws -> Row? {
-        
-        let msgg = try pr.readMsg()
-        guard let msg = msgg else {
-            return nil
-        }
+        let msg = try pr.readMsgForce()
         switch msg {
         case let .DataRow(num: _, values: values):
             return Row(values, columns: columns!)
-         default:
-            print("warn")
+        case .CommandComplete:
             return nil
+        default:
+            throw PostgresErrors.ProtocolError(.UnexpectedResp(msg))
         }
         
     }

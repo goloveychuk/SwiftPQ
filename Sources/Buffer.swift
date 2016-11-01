@@ -10,15 +10,21 @@ import Foundation
 
 
 
-class Buffer {
-    var buffer: Data
-    var lengthInd: Int? = nil
-    var cursor = 0
-    init(_ data : Data){
-        buffer = data
-    }
-    init() {
+class WriteBuffer {
+    fileprivate var buffer: Data
+    fileprivate var lengthInd: Int = 0
+
+    init(_ type: FrontendMessageTypes?) {
         buffer = Data()
+        if let type = type {
+            buffer.append(Byte(type.rawValue.value))
+            lengthInd = 1
+        }
+        self.addInt32(0) //preserve for len
+    }
+    func pack() -> Data {
+        self.buffer.replaceSubrange(lengthInd..<lengthInd+MemoryLayout<Int32>.size, with: Int32(self.buffer.count-lengthInd).toBytes)//should be faster
+        return self.buffer
     }
     func addInt32(_ v : Int32) {
         self.buffer.append(v.toBytes)
@@ -36,9 +42,6 @@ class Buffer {
     func addData(_ v: Data) {
         buffer.append(v)
     }
-    func addType<T:RawRepresentable>(_ v: T) where T.RawValue == UnicodeScalar {
-        buffer.append(Byte(v.rawValue.value))
-    }
     func addString(_ v : String) {
         let bytes = v.data(using: String.Encoding.utf8)
         if let bytes = bytes {
@@ -49,25 +52,54 @@ class Buffer {
     func addNull() {
         self.buffer.append(0)
     }
-    func buf() -> Data {
-        if let lengthInd = lengthInd {
-            //print("count", buffer.count)
-            self.buffer.replaceSubrange(lengthInd..<lengthInd+MemoryLayout<Int32>.size, with: Int32(self.buffer.count-lengthInd).toBytes)
+}
+
+enum BufferErrors: Error {
+    case NotEnough
+}
+
+let MSG_HEAD_LEN = 1+MemoryLayout<Int32>.size
+
+class ReadBuffer {
+    fileprivate var buffer: Data
+    fileprivate var cursor: Int = 0
+    
+    init() {
+        buffer = Data()
+    }
+    func append(_ d: Data) {
+        buffer.append(d)
+    }
+    func skip(_ bytes: Int = 1) {
+        cursor += bytes
+    }
+    var isEmpty: Bool {
+        return cursor >= buffer.count
+    }
+    func clean() {
+        cursor = 0
+        buffer = Data()
+    }
+    func unpack() throws -> BackendMsgTypes? {
+        let bytesLeft = buffer.count - cursor
+        
+        guard bytesLeft >= MSG_HEAD_LEN else {
+            return nil
         }
-        return self.buffer
-    }
-    var haveMore: Bool {
-        return cursor < self.buffer.count
-    }
-    var isNull: Bool {
-        return self.buffer[cursor] == 0
+        let msgTypeByte = getByte1()
+        let msgType = BackendMsgTypes(rawValue: UnicodeScalar(msgTypeByte))!
+        
+        let len = Int(getInt32())
+        
+        guard bytesLeft >= len else {
+            cursor -= MSG_HEAD_LEN
+            return nil
+        }
+        return msgType
     }
     func getByte1() -> Byte {
         cursor += 1
         return buffer[cursor-1]
-    }
-    func skipByte() {
-        cursor += 1
     }
     func getBytes(_ count: Int) -> Data {
         let d = buffer.subdata(in: cursor..<cursor+count)
@@ -79,7 +111,7 @@ class Buffer {
         defer { cursor = newC }
         return Int32(fromBytes: buffer.subdata(in: cursor..<newC))
     }
-    func getInt16() -> Int16 {//todo refactor
+    func getInt16() -> Int16 {
         let newC = cursor+MemoryLayout<Int16>.size
         defer { cursor = newC }
         return Int16(fromBytes: buffer.subdata(in: cursor..<newC))
@@ -94,7 +126,10 @@ class Buffer {
         
         cursor = newCursor + 1
         return str!
-        
     }
+    var isNull: Bool {
+        return self.buffer[cursor] == 0
+    }
+    
 }
 
