@@ -76,8 +76,20 @@ public  class Row {
                 v = d
             case .TimeTz:
                 v = Time(fromBytes: d)
-            case .Decimal, .Json, .UUID, .Money:
+            case .UUID:
+                v = UUID(fromBytes: d)
+            case .Money:
+                v = Money(fromBytes: d)
+            case .Json:
+                let l = Array(d)
                 v = "hz"
+            case .Decimal:
+                let l = Array(d)
+                let n = Int16(fromBytes: d.subdata(in: 0..<2))
+                let weight = Int16(fromBytes: d.subdata(in: 2..<4))
+                let sign = Int16(fromBytes: d.subdata(in: 4..<6))
+                let scale = Int16(fromBytes: d.subdata(in: 6..<8))
+                v = "dsa"
             default:
                 assert(false, "bad type")
             }

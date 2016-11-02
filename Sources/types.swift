@@ -237,12 +237,14 @@ extension Date: PostgresTypeConvertible { //deal with timezones
 }
 extension UUID: PostgresTypeConvertible {
     public var toBytes: Data {
-        return self.uuidString.toBytes
+        let u = self.uuid
+        return Data(bytes: [u.0, u.1, u.2, u.3, u.4, u.5, u.6, u.7, u.8, u.9, u.10, u.11, u.12, u.13, u.14, u.15])
     }
     public var oid: Oid { return Oid.UUID }
     
-    public init(fromBytes: Data) {
-        self.init()
+    public init(fromBytes b: Data) {
+        let u = Darwin.uuid_t(b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8], b[9], b[10], b[11], b[12], b[13], b[14], b[15])
+        self.init(uuid: u)
     }
     
 }
@@ -259,7 +261,24 @@ extension Data: PostgresTypeConvertible {
 }
 
 
-
+public struct Money: PostgresTypeConvertible {
+    let base, frac: Int
+    public var toBytes: Data {
+        let v = Int64(base * 100 + frac)
+        return v.toBytes
+    }
+    public var oid: Oid { return Oid.Money }
+    
+    public init(fromBytes: Data) {
+        let v = Int64(fromBytes: fromBytes)
+        let vv = Int(v)
+        self.init(base: (vv / 100), frac: (vv % 100))
+    }
+    public init(base: Int, frac: Int) {
+        self.base = base
+        self.frac = frac
+    }
+}
 
 struct CustomType: PostgresTypeConvertible {
     let data: Data
@@ -275,7 +294,7 @@ struct CustomType: PostgresTypeConvertible {
 }
 
 
-
-
+// http://doxygen.postgresql.org/backend_2utils_2adt_2numeric_8c.html#a57a8f8ab552bae24926d252180956958
+//extension Decimal: PostgresTypeConvertible
 
 

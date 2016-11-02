@@ -54,8 +54,8 @@ class PurePostgresTests: XCTestCase {
         let serial8 = Int(234234234232)
         let serial4 = Int32(90800564)
         let serial2 = Int16(4321)
-        let decimal = Float64(312.123) //to decimal
-        let money = Int(12)
+        let decimal = Float64(1231.171) //to decimal
+        let money = Money(base: 213, frac: 45)
         let boolean = true
         let bytea = Data(bytes: [3,2, 123])
         let char_1 = "a"
@@ -71,15 +71,14 @@ class PurePostgresTests: XCTestCase {
         let timetz = Time(hour: 23, minute: 12, second: 32,microsecond: 64321,  tz: nil)
         let timestamp = Date()
         let timestamptz = Date()
-        let json = "{\"asd\": \"fsd\"}"
-        let uuid = UUID(uuidString: "4asfas34safggds1")
-        
+        //let json = "{\"asd\": \"fsd\"}"
+        let uuid = UUID()
         //let int8_arr: [Int64] = [543,123,123,543,12312312123,534254235]
-        let int8_arr = CustomType(.ArrInt8, data: Data(bytes: [21, 31, 123, 1, 12, 12, 1, 32]))
+        //let int8_arr = CustomType(.ArrInt8, data: Data(bytes: [21, 31, 123, 1, 12, 12, 1, 32]))
         
-        let q = "insert into TestBindings(t_int8, t_int4, t_int2, t_serial8, t_serial4, t_serial2, t_decimal, t_money, t_boolean, t_bytea, t_char_one, t_char_ten, t_varchar_one, t_varchar_ten, t_text, t_float8, t_float4, t_date, t_time, t_timetz, t_timestamp, t_timestamptz, t_json, t_uuid, t_int8_arr) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, null, null, null )"
+        let q = "insert into TestBindings(t_int8, t_int4, t_int2, t_serial8, t_serial4, t_serial2, t_decimal, t_money, t_boolean, t_bytea, t_char_one, t_char_ten, t_varchar_one, t_varchar_ten, t_text, t_float8, t_float4, t_date, t_time, t_timetz, t_timestamp, t_timestamptz, t_json, t_uuid, t_int8_arr) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, null, $23, null )"
         
-        let st = try! conn.execute(q, args: [int8, int4, int2, serial8, serial4, serial2, decimal, money, boolean, bytea, char_1, char_10, varchar_1, varchar_10, text, float8, float4, date, time, timetz, timestamp, timestamptz])
+        let st = try! conn.execute(q, args: [int8, int4, int2, serial8, serial4, serial2, decimal, money, boolean, bytea, char_1, char_10, varchar_1, varchar_10, text, float8, float4, date, time, timetz, timestamp, timestamptz, uuid])
         while let a = try! st.getRow() {
             
         }
