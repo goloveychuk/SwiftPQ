@@ -157,11 +157,17 @@ extension Float32: PostgresTypeConvertible {
 extension PgDate: PostgresTypeConvertible {
     public var oid: Oid { return Oid.Date}
     public init(fromBytes: Data) {
-        self.init(year: 3112, month:3, day: 1)
+        let days = Int32(fromBytes: fromBytes)
+        let milD = DateComponents(calendar: Calendar.current, year: 2000).date!//shitty api
+        
+        let d = Calendar.current.date(byAdding: .day, value: Int(days), to: milD)!
+        let dc = Calendar.current.dateComponents([.year, .month, .day], from: d)
+        self.init(year: dc.year!, month: dc.month!, day: dc.day!)
     }
     public var toBytes: Data {
-        let time: Int32 = 312
-        return time.toBytes
+        let dc = Calendar.current.dateComponents([Calendar.Component.day], from: DateComponents(year: 2000), to:  DateComponents(year: year, month: month, day: day))
+        let days = Int32(dc.day!)
+        return days.toBytes
     }
 }
 
@@ -174,37 +180,59 @@ extension Time: PostgresTypeConvertible {
         }
     }
     public init(fromBytes: Data) {
-        self.init(hour: 12, minute:3, second: 1, microsecond: 31213, tz: nil)
+        if fromBytes.count == 12 {
+            let tD = fromBytes.subdata(in: 0..<8)
+            //let tzD = fromBytes.subdata(in: 8..<12) //todo timezones. Timezones are everywhere
+            let microseconds = Int64(fromBytes: tD)
+            self.init(Int(microseconds))
+            
+        } else {
+            let microseconds = Int64(fromBytes: fromBytes)
+            self.init(Int(microseconds))
+        }
+    }
+    init(_ microseconds: Int) {
+        let seconds = microseconds / 1_000_000
+        let hour = seconds / 3600
+        let minute = (seconds % 3600) / 60
+        let second = seconds % 60
+        let microsecond = microseconds % 1_000_000
+        self.init(hour: hour, minute: minute, second: second, microsecond: microsecond, tz: nil)
     }
     public var toBytes: Data {
-        if let tz = tz {
-            let time: Int64 = 312
-            var d = time.toBytes
-            d.append(1)
-            d.append(1)
-            return d
+        var seconds = Int64(second)
         
-        } else {
-            let time: Int64 = 312
-            return time.toBytes
+        seconds += 60 * minute
+        
+        seconds += 3600 * hour
+        
+        let microseconds = (seconds * 1_000_000) + microsecond
+        
+        var d = microseconds.toBytes
+        if let _ = tz {
+            let tzd = Int32(0)
+            d.append(tzd.toBytes)
         }
+        return d
         
     }
 }
+let MILLENIUM_DC = DateComponents(timeZone: TimeZone(identifier: "UTC"), year: 2000) //check date
+let MILLENIUM_DATE = Calendar.autoupdatingCurrent.date(from: MILLENIUM_DC)!
 
-extension Date: PostgresTypeConvertible {
+extension Date: PostgresTypeConvertible { //deal with timezones
     public var toBytes: Data {
-        let time: Int64 = 312
-        return time.toBytes
+        let ti = self.timeIntervalSince(MILLENIUM_DATE)
+        let microseconds = Int64(ti * 1_000_000)
+        return microseconds.toBytes
     }
     public var oid: Oid { return Oid.Timestamp }
 
     public init(fromBytes: Data) {
         let microseconds = Int64(fromBytes: fromBytes)
         let ti = TimeInterval(Double(microseconds)/1_000_000.0)
-        let dc = DateComponents(timeZone: TimeZone(identifier: "UTC"), year: 2000)
-        let sinceDate = Calendar.current.date(from: dc)!
-        self.init(timeInterval: ti, since: sinceDate)
+        
+        self.init(timeInterval: ti, since: MILLENIUM_DATE)
     }
 }
 extension UUID: PostgresTypeConvertible {

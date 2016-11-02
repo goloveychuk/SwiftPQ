@@ -67,8 +67,8 @@ class PurePostgresTests: XCTestCase {
         let float4 = Float32(3211.432)
         
         let date = PgDate(year: 2012, month: 11, day: 3)
-        let time = Time(hour: 23, minute: 12, second: 32, microsecond: 321321321, tz: nil)
-        let timetz = Time(hour: 23, minute: 12, second: 32,microsecond: 654321,  tz: nil)
+        let time = Time(hour: 23, minute: 12, second: 32, microsecond: 32321, tz: nil)
+        let timetz = Time(hour: 23, minute: 12, second: 32,microsecond: 64321,  tz: nil)
         let timestamp = Date()
         let timestamptz = Date()
         let json = "{\"asd\": \"fsd\"}"
