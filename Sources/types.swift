@@ -21,12 +21,17 @@ public enum Oid: Int32 {
     case Int4 = 23
     case Text = 25
     //case Oid = 26
-    //case Json = 114
+    case Json = 114
     //case Xml = 142
     case Float4 = 700
     case Float8 = 701
     
+    case FixedChar = 1042
     case VarChar = 1043
+    
+    case Decimal = 1700
+    case Money = 790
+    
     
     case Date = 1082
     case Time = 1083
@@ -126,11 +131,12 @@ extension Bool: PostgresTypeConvertible {
 extension Float64: PostgresTypeConvertible {
     public var oid: Oid { return Oid.Float8 }
     public init(fromBytes: Data) {
-        let v: Float64 = readPrimitiveMemory(data: fromBytes)
-        self.init(v)
+        var v: UInt64 = readPrimitiveMemory(data: fromBytes)
+        v = UInt64(bigEndian: v)
+        self.init(bitPattern: v)
     }
     public var toBytes: Data {
-        var v = self
+        var v = self.bitPattern.bigEndian
         return getPrimitiveBytes(&v)
     }
 }
@@ -138,11 +144,12 @@ extension Float64: PostgresTypeConvertible {
 extension Float32: PostgresTypeConvertible {
     public var oid: Oid { return Oid.Float4 }
     public init(fromBytes: Data) {
-        let v: Float32 = readPrimitiveMemory(data: fromBytes)
-        self.init(v)
+        var v: UInt32 = readPrimitiveMemory(data: fromBytes)
+        v = UInt32(bigEndian: v)
+        self.init(bitPattern: v)
     }
     public var toBytes: Data {
-        var v = self
+        var v = self.bitPattern.bigEndian
         return getPrimitiveBytes(&v)
     }
 }

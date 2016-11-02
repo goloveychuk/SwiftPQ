@@ -37,8 +37,16 @@ class PurePostgresTests: XCTestCase {
     
         //}
     }
-    
+    func cleanDb() {
+        let st = try! conn.execute("delete from TestBindings")
+        while let _ = try! st.getRow(){
+            
+        }
+        
+    }
     func testBindingsInsert() throws {
+        
+        cleanDb()
         
         let int8 = Int(1324572457543)
         let int4 = Int32(1212312312)
@@ -55,8 +63,8 @@ class PurePostgresTests: XCTestCase {
         let varchar_1 = "c"
         let varchar_10 = "jslsoriapg"
         let text = "sadffdsafdsafasdsadffdsafdsafasdsadffdsafdsafasdsadffdsafdsafasdsadffdsafdsafasdsadffdsafdsafasdsadffdsafdsafasdsadffdsafdsafasdsadffdsafdsafasdsadffdsafdsafasd sadffdsafdsafasd sadffdsafdsafasd sadffdsafdsafasd"
-        let float8 = Float64(124534643.4234324)
-        let float4 = Float32(312123.1321)
+        let float8 = Float64(123.123)
+        let float4 = Float32(3211.432)
         
         let date = PgDate(year: 2012, month: 11, day: 3)
         let time = Time(hour: 23, minute: 12, second: 32, microsecond: 321321321, tz: nil)
@@ -75,6 +83,12 @@ class PurePostgresTests: XCTestCase {
         while let a = try! st.getRow() {
             
         }
+        let qq = "select * from TestBindings"
+        let st2 = try! conn.execute(qq)
+        while let r = try! st2.getRow() {
+            print(r.dict)
+        }
+        
     }
 
 

@@ -38,43 +38,50 @@ public  class Row {
                 dict[c.name] = nil
                 continue
             }
+            var v : Any!
             switch c.typeOid {
             case .Int4:
-                let v = Int(Int32(fromBytes: d))
-                dict[c.name] = v
-            case .Int2:
-                let v = Int(Int16(fromBytes: d)) //todo 64/32 bit systems
-                dict[c.name] = v
-            case .Int8:
-                let v = Int(fromBytes: d)
-                dict[c.name] = v
-            case .Text:
-                let v = String(fromBytes: d)
-                dict[c.name] = v
-            case .Bool:
-                let v = Bool(fromBytes: d)
-                dict[c.name] = v
-            case .Timestampz: //todo infinity
-                let microseconds = Int64(fromBytes: d)
-                let ti = TimeInterval(Double(microseconds)/1_000_000.0)
-                let dc = DateComponents(timeZone: TimeZone(identifier: "UTC"), year: 2000)
-                let sinceDate = Calendar.current.date(from: dc)!
-                let d = Date(timeInterval:
-                    ti, since: sinceDate)
-                dict[c.name] = d
+                v = Int(Int32(fromBytes: d))
                 
-            case .Timestamp: //todo teste
-                let microseconds = Int64(fromBytes: d)
-                let ti = TimeInterval(Double(microseconds)/1_000_000.0)
-                let dc = DateComponents(timeZone: TimeZone.current, year: 2000)
-                let sinceDate = Calendar.current.date(from: dc)!
-                let d = Date(timeInterval:
-                    ti, since: sinceDate)
-                dict[c.name] = d
+            case .Int2:
+                v = Int(Int16(fromBytes: d)) //todo 64/32 bit systems
             
+            case .Int8:
+                v = Int(fromBytes: d)
+                
+            case .Text, .VarChar, .FixedChar:
+                v = String(fromBytes: d)
+                
+            case .Bool:
+                v = Bool(fromBytes: d)
+                
+            case .Timestampz: //todo infinity
+                v = Date(fromBytes: d)
+                
+                
+            case .Timestamp:
+                v = Date(fromBytes: d)
+        
+            case .Float4:
+                v = Float64(Float32(fromBytes: d))
+                
+            case .Float8:
+                 v = Float64(fromBytes: d)
+                
+            case .Time:
+                 v = Time(fromBytes: d)
+            case .Date:
+                v = PgDate(fromBytes: d)
+            case .Bytea:
+                v = d
+            case .TimeTz:
+                v = Time(fromBytes: d)
+            case .Decimal, .Json, .UUID, .Money:
+                v = "hz"
             default:
                 assert(false, "bad type")
             }
+            dict[c.name] = v
         }
         return dict
     }

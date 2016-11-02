@@ -31,17 +31,17 @@ public  class Statement {
     }
     public  func parse(_ args: [PostgresTypeConvertible?]) throws {
         let oids = args.map { $0?.oid.rawValue ?? 0 }
-        let fields = try pr.parse(statementName: "st", query: query, oids: oids)
+        let fields = try pr.parse(statementName: "", query: query, oids: oids)
         columns = Columns(fields)
     }
     
    public  func bind(_ args: [PostgresTypeConvertible?]) throws {
     let args = args.map { $0?.toBytes } //todo make lazy
         dest = getUniqueName()
-        try pr.bind(statementName: "st", dest: "dest", args: args)
+        try pr.bind(statementName: "", dest: "", args: args)
     }
    public  func execute() throws {
-        try pr.execute(dest: "dest")
+        try pr.execute(dest: "")
     }
     
    public  func getRow() throws -> Row? {
@@ -50,7 +50,13 @@ public  class Statement {
         case let .DataRow(num: _, values: values):
             return Row(values, columns: columns!)
         case .CommandComplete:
-            return nil
+            let msg = try pr.readMsgForce()
+            switch msg {
+            case .ReadyForQuery:
+                return nil
+            default:
+                throw PostgresErrors.ProtocolError(.UnexpectedResp(msg))
+            }
         default:
             throw PostgresErrors.ProtocolError(.UnexpectedResp(msg))
         }
