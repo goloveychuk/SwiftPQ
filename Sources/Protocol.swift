@@ -150,9 +150,9 @@ extension Protocol {
 
 /////queries
 extension Protocol {
-    func parse(statementName: String, query: String, oids: [Oid]) throws -> [Field] {
+    func parse(statementName: String, query: String, oids: [Int32]) throws -> [Field] {
         
-        let msg = FrontendMessages.Parse(destination: statementName, query: query, numberOfParameters: Int16(oids.count), argsOids: oids.map {$0.rawValue} )
+        let msg = FrontendMessages.Parse(destination: statementName, query: query, numberOfParameters: Int16(oids.count), argsOids: oids )
         
         try socket.write(msg, .Describe(name: statementName), .Flush)
         try socket.flush()

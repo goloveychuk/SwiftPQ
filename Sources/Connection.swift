@@ -37,6 +37,13 @@ public class Connection {
     public func statement(query: String) -> Statement {
         return Statement(pr: pr, query: query)
     }
+    public func execute(_ query: String, args: [PostgresTypeConvertible?] = []) throws -> Statement {
+        let st = Statement(pr: pr, query: query)
+        try st.parse(args)
+        try st.bind(args)
+        try st.execute()
+        return st
+    }
     func transaction() -> Transaction {
         return Transaction()
     }

@@ -12,7 +12,7 @@ import Foundation
 
 
 //https://github.com/postgres/postgres/blob/master/src/include/catalog/pg_type.h
-enum Oid: Int32 {
+public enum Oid: Int32 {
     case Bool = 16
     //case Bytea = 17
     case Char = 18
@@ -39,24 +39,25 @@ enum Oid: Int32 {
 
 
 
-protocol PostgresTypeConvertible {
+public protocol PostgresTypeConvertible {
     
     var toBytes: Data { get }
     init(fromBytes : Data)
+    var oid: Oid { get }
 }
 
-protocol NumericalPostgresType: PostgresTypeConvertible {
+public protocol NumericalPostgresType: PostgresTypeConvertible {
     associatedtype T: Integer
     var bigEndian: T { get }
     init(bigEndian: T)
 }
 
 extension NumericalPostgresType {
-    var toBytes: Data {
+    public var toBytes: Data {
         var newV = self.bigEndian
         return Data(bytes: &newV, count: MemoryLayout<T>.size)
     }
-    init(fromBytes: Data) {
+    public init(fromBytes: Data) {
         
         var v: T = 0
         withUnsafeMutablePointer(to: &v) {
@@ -69,27 +70,28 @@ extension NumericalPostgresType {
 }
 
 extension Int32: NumericalPostgresType {
-    
+    public var oid: Oid { return Oid.Int4 }
 }
 extension Int64: NumericalPostgresType {
-    
+    public var oid: Oid { return Oid.Int8 }
 }
 
 extension Int: NumericalPostgresType {
-    
+    public var oid: Oid { return Oid.Int8 }
 }
 
 extension Int16: NumericalPostgresType {
-    
+    public var oid: Oid { return Oid.Int2 }
 }
+
 extension String {
-    init?(fromBytes: Data) {
+    public init?(fromBytes: Data) {
         self.init(data: fromBytes, encoding: String.Encoding.utf8)
     }
 }
 
 extension Bool {
-    init(fromBytes: Data) {
+    public init(fromBytes: Data) {
         self.init(fromBytes[0]==1)
     }
 }

@@ -29,12 +29,14 @@ public  class Statement {
         stName = getUniqueName()
         self.query = query
     }
-    public  func parse() throws {
-        let fields = try pr.parse(statementName: "st", query: query, oids: [.Int8])
+    public  func parse(_ args: [PostgresTypeConvertible?]) throws {
+        let oids = args.map { $0?.oid.rawValue ?? 0 }
+        let fields = try pr.parse(statementName: "st", query: query, oids: oids)
         columns = Columns(fields)
     }
     
-   public  func bind(_ args: [Data?]) throws {
+   public  func bind(_ args: [PostgresTypeConvertible?]) throws {
+    let args = args.map { $0?.toBytes } //todo make lazy
         dest = getUniqueName()
         try pr.bind(statementName: "st", dest: "dest", args: args)
     }
@@ -52,7 +54,6 @@ public  class Statement {
         default:
             throw PostgresErrors.ProtocolError(.UnexpectedResp(msg))
         }
-        
     }
     
 }
