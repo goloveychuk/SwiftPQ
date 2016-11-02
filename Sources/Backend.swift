@@ -38,6 +38,8 @@ enum BackendMsgTypes: UnicodeScalar {
     case RowDescription = "T"
     case BindComplete = "2"
     case DataRow = "D"
+    case NoticeResponse = "N"
+    case NoData = "n"
 }
 
 
@@ -67,6 +69,9 @@ enum BackendMessages {
     case RowDescription(fieldsNum: Int16, fields: [Field])
     case BindComplete
     case DataRow(num: Int16, values: [Data?])
+    case NoticeResponse(pairs: [(Byte, String)])
+    case NoData
+    
     init(msgType : BackendMsgTypes, buf: ReadBuffer) throws {
         
         
@@ -154,6 +159,17 @@ enum BackendMessages {
                 values.append(d)
             }
             self = .DataRow(num: num, values: values)
+        case .NoticeResponse:
+            var pairs: [(Byte, String)] = []
+            while !buf.isNull {
+                let fType = buf.getByte1()
+                let val = buf.getString()
+                pairs.append((fType, val))
+            }
+            buf.skip()
+            self = .NoticeResponse(pairs: pairs )
+        case .NoData:
+            self = .NoData
         }
         
     }

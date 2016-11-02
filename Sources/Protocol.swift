@@ -55,7 +55,7 @@ class Protocol {
         }
         
         let msg = try! BackendMessages(msgType: msgType!, buf: buffer)
-        //print("debug, msg", msg)
+        print("debug, msg", msg)
         return msg
     }
     
@@ -70,7 +70,7 @@ class Protocol {
 ///async messages
 extension Protocol {
     func readAsync() {
-        
+      
     }
 }
 
@@ -171,6 +171,8 @@ extension Protocol {
             switch resp {
             case .ParameterDescription:
                 break
+            case .NoData: //todo move to readasync
+                return []
             case let .RowDescription(fieldsNum: _, fields: fields):
                 return fields
             //case .ReadyForQuery:
@@ -200,7 +202,7 @@ extension Protocol {
     }
     func execute(dest: String) throws {
         
-        try socket.write(.Execute(name: dest, maxRowNums: 0), .Flush)
+        try socket.write(.Execute(name: dest, maxRowNums: 0), .Sync)
         try socket.flush()
         
     }
