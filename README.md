@@ -6,3 +6,7 @@ It implements frontend/backend postgres protocol ( https://www.postgresql.org/do
 Early beginning, PRs are welcome.
 
 For now for TCP sockets are used libmill's one. http://libmill.org/documentation.html
+
+What is done:
+https://github.com/goloveychuk/SwiftPQ/blob/master/Tests/PurePostgresTests/PurePostgresTests.swift
+
