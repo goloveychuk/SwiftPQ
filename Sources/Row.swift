@@ -90,6 +90,9 @@ public  class Row {
                 let sign = Int16(fromBytes: d.subdata(in: 4..<6))
                 let scale = Int16(fromBytes: d.subdata(in: 6..<8))
                 v = "dsa"
+            case .ArrInt8:
+                v = PostgresArray<Int64>(fromBytes: d)
+                
             default:
                 assert(false, "bad type")
             }

@@ -57,10 +57,14 @@ public struct PgDate {
 public protocol PostgresTypeConvertible {
     var toBytes: Data { get }
     init(fromBytes : Data)
-    var oid: Oid { get }
+     var oid: Oid { get }
 }
 
-public protocol IntegerPostgresType: PostgresTypeConvertible {
+public protocol PostgresArrayConvertible: PostgresTypeConvertible {
+    static var oid: Oid { get }
+}
+
+public protocol IntegerPostgresType: PostgresArrayConvertible {
     associatedtype T: Integer
     var bigEndian: T { get }
     init(bigEndian: T)
@@ -90,25 +94,29 @@ extension IntegerPostgresType {
 }
 
 extension Int32: IntegerPostgresType {
-    public var oid: Oid { return Oid.Int4 }
+    public  var oid: Oid { return Oid.Int4 }
+    public static var oid: Oid { return Oid.Int4 }
 }
 extension Int64: IntegerPostgresType {
-    public var oid: Oid { return Oid.Int8 }
+    public  var oid: Oid { return Oid.Int8 }
+    public static var oid: Oid { return Oid.Int8 }
 }
 
 extension Int: IntegerPostgresType {
-    public var oid: Oid { return Oid.Int8 }
+    public  var oid: Oid { return Oid.Int8 }
+    public static var oid: Oid { return Oid.Int8 }
 }
 
 extension Int16: IntegerPostgresType {
-    public var oid: Oid { return Oid.Int2 }
+    public  var oid: Oid { return Oid.Int2 }
+    public static var oid: Oid { return Oid.Int2 }
 }
 
 extension String: PostgresTypeConvertible {
     public init(fromBytes: Data) {
         self.init(data: fromBytes, encoding: String.Encoding.utf8)!
     }
-    public var oid: Oid { return Oid.Text }
+    public  var oid: Oid { return Oid.Text }
     public var toBytes: Data {
         return self.data(using: String.Encoding.utf8)!
     }
@@ -118,7 +126,7 @@ extension Bool: PostgresTypeConvertible {
     public init(fromBytes: Data) {
         self.init(fromBytes[0]==1)
     }
-    public var oid: Oid { return Oid.Bool }
+    public  var oid: Oid { return Oid.Bool }
     public var toBytes: Data {
         var byte: Byte = 0
         if self {
@@ -129,7 +137,7 @@ extension Bool: PostgresTypeConvertible {
 }
 
 extension Float64: PostgresTypeConvertible {
-    public var oid: Oid { return Oid.Float8 }
+    public  var oid: Oid { return Oid.Float8 }
     public init(fromBytes: Data) {
         var v: UInt64 = readPrimitiveMemory(data: fromBytes)
         v = UInt64(bigEndian: v)
@@ -142,7 +150,7 @@ extension Float64: PostgresTypeConvertible {
 }
 
 extension Float32: PostgresTypeConvertible {
-    public var oid: Oid { return Oid.Float4 }
+    public  var oid: Oid { return Oid.Float4 }
     public init(fromBytes: Data) {
         var v: UInt32 = readPrimitiveMemory(data: fromBytes)
         v = UInt32(bigEndian: v)
@@ -155,7 +163,7 @@ extension Float32: PostgresTypeConvertible {
 }
 
 extension PgDate: PostgresTypeConvertible {
-    public var oid: Oid { return Oid.Date}
+    public  var oid: Oid { return Oid.Date}
     public init(fromBytes: Data) {
         let days = Int32(fromBytes: fromBytes)
         let milD = DateComponents(calendar: Calendar.current, year: 2000).date!//shitty api
@@ -172,7 +180,7 @@ extension PgDate: PostgresTypeConvertible {
 }
 
 extension Time: PostgresTypeConvertible {
-    public var oid: Oid {
+    public  var oid: Oid {
         if tz != nil {
             return Oid.TimeTz
         } else {
@@ -226,7 +234,7 @@ extension Date: PostgresTypeConvertible { //deal with timezones
         let microseconds = Int64(ti * 1_000_000)
         return microseconds.toBytes
     }
-    public var oid: Oid { return Oid.Timestamp }
+    public  var oid: Oid { return Oid.Timestamp }
 
     public init(fromBytes: Data) {
         let microseconds = Int64(fromBytes: fromBytes)
@@ -240,7 +248,7 @@ extension UUID: PostgresTypeConvertible {
         let u = self.uuid
         return Data(bytes: [u.0, u.1, u.2, u.3, u.4, u.5, u.6, u.7, u.8, u.9, u.10, u.11, u.12, u.13, u.14, u.15])
     }
-    public var oid: Oid { return Oid.UUID }
+    public  var oid: Oid { return Oid.UUID }
     
     public init(fromBytes b: Data) {
         let u = Darwin.uuid_t(b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8], b[9], b[10], b[11], b[12], b[13], b[14], b[15])
@@ -253,7 +261,7 @@ extension Data: PostgresTypeConvertible {
     public var toBytes: Data {
         return self
     }
-    public var oid: Oid { return Oid.Bytea }
+    public  var oid: Oid { return Oid.Bytea }
     
     public init(fromBytes: Data) {
         self.init(fromBytes)
@@ -267,7 +275,7 @@ public struct Money: PostgresTypeConvertible {
         let v = Int64(base * 100 + frac)
         return v.toBytes
     }
-    public var oid: Oid { return Oid.Money }
+    public  var oid: Oid { return Oid.Money }
     
     public init(fromBytes: Data) {
         let v = Int64(fromBytes: fromBytes)
@@ -293,6 +301,71 @@ struct CustomType: PostgresTypeConvertible {
     }
 }
 
+///extension Array where Element: PostgresTypeConvertible {
+//    public var toBytes: Data {
+//        return Data()
+//    }
+//    public var oid: Oid { return Oid.Bytea }
+//    public init(fromBytes: Data) {
+//        self.init()
+//    }
+//} ///////////////////////////////////////////////////////////don't work
+
+//extension Array: PostgresTypeConvertible{}
+
+
+public struct PostgresArray<T: PostgresArrayConvertible>: PostgresTypeConvertible {
+    let data: Array<T>
+    public var toBytes: Data {
+        let dimension = Int32(1).toBytes
+        let notNull = Int32(0).toBytes
+        let typeOid = T.oid.rawValue.toBytes
+        let length = Int32(self.data.count).toBytes
+        let startingDimInd = Int32(0).toBytes
+        var data = dimension+notNull+typeOid+length+startingDimInd
+        
+        for i in self.data {
+            let d = i.toBytes
+            let len_t = Int32(d.count).toBytes
+            data.append(len_t+d)
+        }
+        print(data)
+        return data
+    }
+    public  var oid: Oid {
+        switch T.oid {
+        case .Int8:
+            return .ArrInt8
+        default:
+            return .Bytea
+        }
+    }
+    public init(fromBytes d: Data) {
+        let dimension = Int32(fromBytes: d.subdata(in: 0..<4))
+        let notNull = Int32(fromBytes: d.subdata(in: 4..<8))
+        let typeOid = Int32(fromBytes: d.subdata(in: 8..<12))
+        let length = Int32(fromBytes: d.subdata(in: 12..<16))
+        let startingDimInd = Int32(fromBytes: d.subdata(in: 16..<20))
+        var data = Array<T>()
+        var ind = 20
+        for i in 0..<Int(length) {
+            let t_len = Int(Int32(fromBytes: d.subdata(in: ind..<ind+4)))
+            ind += 4
+            let el = T(fromBytes: d.subdata(in: ind..<ind+t_len))
+            ind += t_len
+            data.append(el)
+        }
+        self.data = data
+        
+
+    }
+  }
+
+extension PostgresArray: ExpressibleByArrayLiteral {
+    public init(arrayLiteral elements: T...) {
+        self.data = elements
+    }
+}
 
 // http://doxygen.postgresql.org/backend_2utils_2adt_2numeric_8c.html#a57a8f8ab552bae24926d252180956958
 //extension Decimal: PostgresTypeConvertible

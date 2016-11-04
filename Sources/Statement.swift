@@ -18,7 +18,7 @@ func getUniqueName() -> String {
 
 
 
-public  class Statement {
+public class Statement {
     private let pr: Protocol
     let stName: String
     let query: String
