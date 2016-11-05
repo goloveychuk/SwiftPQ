@@ -111,6 +111,10 @@ extension Int16: IntegerPostgresType {
     public  var oid: Oid { return Oid.Int2 }
     public static var oid: Oid { return Oid.Int2 }
 }
+extension UInt16: IntegerPostgresType {
+    public  var oid: Oid { return Oid.Int2 }
+    public static var oid: Oid { return Oid.Int2 }
+}
 
 extension String: PostgresTypeConvertible {
     public init(fromBytes: Data) {
@@ -365,6 +369,10 @@ extension PostgresArray: ExpressibleByArrayLiteral {
     public init(arrayLiteral elements: T...) {
         self.data = elements
     }
+}
+
+extension Decimal {
+    
 }
 
 // http://doxygen.postgresql.org/backend_2utils_2adt_2numeric_8c.html#a57a8f8ab552bae24926d252180956958

@@ -29,8 +29,15 @@ class LibmillSocket: Socket {
     }
     }
     public func read() throws -> Data {
-        let buf = try self.socket.read(upTo: BATCH_SIZE, deadline: -1)
-        return Data(buf)
+        var buf = Data(count: BATCH_SIZE)
+        let count = try buf.withUnsafeMutableBytes { (p: UnsafeMutablePointer<Byte>) -> Int in
+            let bufP = UnsafeMutableBufferPointer(start: p, count: BATCH_SIZE)
+            return try self.socket.read(into: bufP, deadline: -1).count
+        }
+        buf.count = count
+        
+//        let buf = try self.socket.read(upTo: BATCH_SIZE, deadline: -1)
+        return buf
     }
     public func flush() throws {
         try self.socket.flush(deadline: -1)
@@ -45,7 +52,7 @@ class LibmillSocket: Socket {
 extension Socket {
     func write(_ msgs: FrontendMessages...) throws {
         for i in msgs {
-            print("debug, sent", i)
+            //print("debug, sent", i)
             try write(i.buf().pack())
         }
     }

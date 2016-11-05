@@ -13,6 +13,11 @@ let sql = "create table TestBindings (t_int8 int8 not null, t_int4 int4 not null
 "t_int8_arr int8[]" +
 ")"
 
+let sql2 = "create table TestBigAmount (" +
+"d1 text not null," +
+"d2 bigint not null," +
+"d3 float8 not null )"
+
 
 //-- t_jsonb jsonb not null,
 //todo arrays, composite types
@@ -50,11 +55,11 @@ class PurePostgresTests: XCTestCase {
         
         let int8 = Int(1324572457543)
         let int4 = Int32(1212312312)
-        let int2 = Int16(2334)
+        let int2 = Int16(-2334)
         let serial8 = Int(234234234232)
         let serial4 = Int32(90800564)
         let serial2 = Int16(4321)
-        let decimal = Float64(1231.171) //to decimal
+        let decimal = Float64(-321.1231211) //to decimal
         let money = Money(base: 213, frac: 45)
         let boolean = true
         let bytea = Data(bytes: [3,2, 123])
@@ -89,9 +94,22 @@ class PurePostgresTests: XCTestCase {
         while let r = try! st2.getRow() {
             print(r.dict)
         }
+    }
+    
+    func testSelectBigAmount() throws {
+        let d1 = "asdasdasdjqw;lejqw;kleq;wkne2;1n31;"
+        let d2 = 231231293812
+        let d3 = 23213123.321435436345
+        let n = 3000
+        for i in 0..<n {
+            let st = try! conn.execute("insert into TestBigAmount(d1, d2, d3) values ($1, $2, $3)", args: [d1, d2, d3])
+            while let _ = try! st.getRow() {
+                
+            }
+        }
+        
         
     }
-
 
     static var allTests : [(String, (PurePostgresTests) -> () throws -> Void)] {
         return [

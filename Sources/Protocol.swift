@@ -55,7 +55,7 @@ class Protocol {
         }
         
         let msg = try! BackendMessages(msgType: msgType!, buf: buffer)
-        print("debug, msg", msg)
+        //print("debug, msg", msg)
         return msg
     }
     

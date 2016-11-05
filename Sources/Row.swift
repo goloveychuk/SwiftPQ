@@ -87,13 +87,25 @@ public  class Row {
                 let l = Array(d)
                 let n = Int16(fromBytes: d.subdata(in: 0..<2))
                 let weight = Int16(fromBytes: d.subdata(in: 2..<4))
-                let sign = Int16(fromBytes: d.subdata(in: 4..<6))
+                let sign = UInt16(fromBytes: d.subdata(in: 4..<6))
                 let scale = Int16(fromBytes: d.subdata(in: 6..<8))
+                var ind = 8
+                
+                var digits = [Int16]()
+            
+                for i in 0..<Int(n) {
+                    let digit = Int16(fromBytes: d.subdata(in: ind..<ind+2))
+                    digits.append(digit)
+                    ind+=2
+                }
+                print(l.count, l, n, weight, sign, scale, digits)
                 v = "dsa"
+                
             case .ArrInt8:
                 v = PostgresArray<Int64>(fromBytes: d)
                 
             default:
+                let l = Array(d)
                 assert(false, "bad type")
             }
             dict[c.name] = v
