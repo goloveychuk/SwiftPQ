@@ -31,8 +31,9 @@ public class Statement {
     }
     public  func parse(_ args: [PostgresTypeConvertible?]) throws {
         let oids = args.map { $0?.oid.rawValue ?? 0 }
-        let fields = try pr.parse(statementName: "", query: query, oids: oids)
-        columns = Columns(fields)
+        if let fields = try pr.parse(statementName: "", query: query, oids: oids) {
+            columns = Columns(fields)
+        }
     }
     
    public  func bind(_ args: [PostgresTypeConvertible?]) throws {
@@ -40,15 +41,33 @@ public class Statement {
         dest = getUniqueName()
         try pr.bind(statementName: "", dest: "", args: args)
     }
-   public  func execute() throws {
+   public func execute() throws {
         try pr.execute(dest: "")
+        if columns == nil {
+            let msg = try pr.readMsgForce()
+            switch msg {
+            case .CommandComplete:
+                let msg = try pr.readMsgForce()
+                switch msg {
+                case .ReadyForQuery:
+                    return
+                default:
+                    throw PostgresErrors.ProtocolError(.UnexpectedResp(msg))
+                }
+            default:
+                throw PostgresErrors.ProtocolError(.UnexpectedResp(msg))
+            }
+        }
     }
     
    public  func getRow() throws -> Row? {
+        guard let columns = columns else {
+            return nil
+        }
         let msg = try pr.readMsgForce()
         switch msg {
         case let .DataRow(num: _, values: values):
-            return Row(values, columns: columns!)
+            return Row(values, columns: columns)
         case .CommandComplete:
             let msg = try pr.readMsgForce()
             switch msg {

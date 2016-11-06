@@ -17,7 +17,7 @@ protocol Socket {
      func flush() throws
 }
 
-let BATCH_SIZE = 10000000
+let BATCH_SIZE = 1_000_000
 
 class LibmillSocket: Socket {
     let socket: TCPStream
@@ -30,14 +30,20 @@ class LibmillSocket: Socket {
     }
     public func read() throws -> Data {
         var buf = Data(count: BATCH_SIZE)
-        let count = try buf.withUnsafeMutableBytes { (p: UnsafeMutablePointer<Byte>) -> Int in
+        let buffer = try buf.withUnsafeMutableBytes { (p: UnsafeMutablePointer<Byte>) -> UnsafeBufferPointer<Byte> in
             let bufP = UnsafeMutableBufferPointer(start: p, count: BATCH_SIZE)
-            return try self.socket.read(into: bufP, deadline: -1).count
+            return try self.socket.read(into: bufP, deadline: -1)
         }
-        buf.count = count
-        
-//        let buf = try self.socket.read(upTo: BATCH_SIZE, deadline: -1)
+
+        buf = Data(buffer: buffer)
         return buf
+//        /////////////////////////////////////////////////////////////////////////////////
+//        var buf = try self.socket.read(upTo: BATCH_SIZE, deadline: -1)
+//        return buf.withUnsafeMutableBufferPointer {
+//            let d = Data(bytesNoCopy: UnsafeMutableRawPointer($0.baseAddress!), count: buf.count, deallocator: .none)
+//            return d
+//        }
+        
     }
     public func flush() throws {
         try self.socket.flush(deadline: -1)

@@ -67,19 +67,28 @@ class ReadBuffer {
     init() {
         buffer = Data()
     }
-    func append(_ d: Data) {
-        buffer.append(d)
+    func add(_ d: Data) {
+        if left > 0 {
+            self.buffer = self.buffer.subdata(in: cursor..<buffer.count)
+            self.buffer.append(d)
+        } else {
+            self.buffer = d
+        }
+        print(self.buffer.count)
+        cursor = 0
+        
     }
     func skip(_ bytes: Int = 1) {
         cursor += bytes
     }
+    var left: Int { return buffer.count - cursor }
     var isEmpty: Bool {
-        return cursor >= buffer.count
+        return left == 0
     }
-    func clean() {
-        cursor = 0
-        buffer = Data()
-    }
+//    func clean() {
+//        cursor = 0
+//        buffer = Data()
+//    }
     func unpack() throws -> BackendMsgTypes? {
         let bytesLeft = buffer.count - cursor
         

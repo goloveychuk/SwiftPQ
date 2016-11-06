@@ -37,6 +37,7 @@ public class Connection {
     public func statement(query: String) -> Statement {
         return Statement(pr: pr, query: query)
     }
+    @discardableResult
     public func execute(_ query: String, args: [PostgresTypeConvertible?] = []) throws -> Statement {
         let st = Statement(pr: pr, query: query)
         try st.parse(args)

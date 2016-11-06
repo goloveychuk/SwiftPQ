@@ -43,10 +43,8 @@ class PurePostgresTests: XCTestCase {
         //}
     }
     func cleanDb() {
-        let st = try! conn.execute("delete from TestBindings")
-        while let _ = try! st.getRow(){
-            
-        }
+        try! conn.execute("delete from TestBindings")
+        
         
     }
     func testBindingsInsert() throws {
@@ -59,6 +57,7 @@ class PurePostgresTests: XCTestCase {
         let serial8 = Int(234234234232)
         let serial4 = Int32(90800564)
         let serial2 = Int16(4321)
+//        Decimal(sign: <#T##FloatingPointSign#>, exponent: <#T##Int#>, significand: <#T##Decimal#>)
         let decimal = Float64(-321.1231211) //to decimal
         let money = Money(base: 213, frac: 45)
         let boolean = true
@@ -85,31 +84,42 @@ class PurePostgresTests: XCTestCase {
         
         let q = "insert into TestBindings(t_int8, t_int4, t_int2, t_serial8, t_serial4, t_serial2, t_decimal, t_money, t_boolean, t_bytea, t_char_one, t_char_ten, t_varchar_one, t_varchar_ten, t_text, t_float8, t_float4, t_date, t_time, t_timetz, t_timestamp, t_timestamptz, t_json, t_uuid, t_int8_arr) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, null, $23, $24 )"
         
-        let st = try! conn.execute(q, args: [int8, int4, int2, serial8, serial4, serial2, decimal, money, boolean, bytea, char_1, char_10, varchar_1, varchar_10, text, float8, float4, date, time, timetz, timestamp, timestamptz, uuid, arr])
-        while let a = try! st.getRow() {
-            
-        }
+        try! conn.execute(q, args: [int8, int4, int2, serial8, serial4, serial2, decimal, money, boolean, bytea, char_1, char_10, varchar_1, varchar_10, text, float8, float4, date, time, timetz, timestamp, timestamptz, uuid, arr])
+        
         let qq = "select * from TestBindings"
         let st2 = try! conn.execute(qq)
         while let r = try! st2.getRow() {
             print(r.dict)
         }
     }
+//    func testSelectBigAmount2() throws {
     
-    func testSelectBigAmount() throws {
+//    }
+    func testSelectBigAmount1() throws {
         let d1 = "asdasdasdjqw;lejqw;kleq;wkne2;1n31;"
         let d2 = 231231293812
         let d3 = 23213123.321435436345
-        let n = 3000
-        for i in 0..<n {
-            let st = try! conn.execute("insert into TestBigAmount(d1, d2, d3) values ($1, $2, $3)", args: [d1, d2, d3])
-            while let _ = try! st.getRow() {
-                
-            }
-        }
         
+        let COUNT = 1_000_000
+        try! conn.execute("delete from testbigamount")
+        
+        try! conn.execute("insert into testbigamount(d1, d2, d3) select $1, $2, $3 from ( select  generate_series(1,$4)  ) q ", args: [d1, d2, d3, COUNT])
+        
+        let st = try! conn.execute("select * from testbigamount")
+        
+        var n = 0
+        while let _ = try! st.getRow() {
+            n += 1
+        }
+        XCTAssert(n == COUNT)
         
     }
+    
+    
+    
+    
+    
+ 
 
     static var allTests : [(String, (PurePostgresTests) -> () throws -> Void)] {
         return [

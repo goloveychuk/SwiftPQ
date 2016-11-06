@@ -49,8 +49,7 @@ class Protocol {
         var msgType = try buffer.unpack()
         if msgType == nil {
             let d = try socket.read()
-            
-            buffer.append(d)
+            buffer.add(d)
             msgType = try buffer.unpack()
         }
         
@@ -61,7 +60,6 @@ class Protocol {
     
     func readMsg() throws -> BackendMessages?  {
         guard !buffer.isEmpty else {
-            buffer.clean()
             return nil
         }
         return try readMsgForce()
@@ -150,7 +148,7 @@ extension Protocol {
 
 /////queries
 extension Protocol {
-    func parse(statementName: String, query: String, oids: [Int32]) throws -> [Field] {
+    func parse(statementName: String, query: String, oids: [Int32]) throws -> [Field]? {
         
         let msg = FrontendMessages.Parse(destination: statementName, query: query, numberOfParameters: Int16(oids.count), argsOids: oids )
         
@@ -172,7 +170,7 @@ extension Protocol {
             case .ParameterDescription:
                 break
             case .NoData: //todo move to readasync
-                return []
+                return nil
             case let .RowDescription(fieldsNum: _, fields: fields):
                 return fields
             //case .ReadyForQuery:
