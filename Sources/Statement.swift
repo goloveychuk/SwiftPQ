@@ -37,7 +37,7 @@ public class Statement {
     }
     
    public  func bind(_ args: [PostgresTypeConvertible?]) throws {
-    let args = args.map { $0?.toBytes } //todo make lazy
+    let args = args.map { $0?.toBuffer } //todo make lazy
         dest = getUniqueName()
         try pr.bind(statementName: "", dest: "", args: args)
     }

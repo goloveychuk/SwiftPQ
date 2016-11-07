@@ -11,8 +11,8 @@ import Foundation
 import TCP
 
 protocol Socket {
-     func write(_ data: Data) throws
-    func read() throws -> Data
+     func write(_ buffer: Buffer) throws
+    func read() throws -> Buffer
     init(host: String, port: Int) throws
      func flush() throws
 }
@@ -22,26 +22,26 @@ let BATCH_SIZE = 1_000_000
 class LibmillSocket: Socket {
     let socket: TCPStream
     
-    public func write(_ data: Data) throws {
-        try data.withUnsafeBytes { (p: UnsafePointer<Byte>) -> Void in
-        let bp = UnsafeBufferPointer(start: p, count: data.count)
+    public func write(_ buffer: Buffer) throws {
+        try buffer.withUnsafeBytes { (p: UnsafePointer<Byte>) -> Void in
+        let bp = UnsafeBufferPointer(start: p, count: buffer.count)
         try self.socket.write(bp, deadline: -1)
     }
     }
-    public func read() throws -> Data {
-        var buf = Data(count: BATCH_SIZE)
-        let buffer = try buf.withUnsafeMutableBytes { (p: UnsafeMutablePointer<Byte>) -> UnsafeBufferPointer<Byte> in
-            let bufP = UnsafeMutableBufferPointer(start: p, count: BATCH_SIZE)
-            return try self.socket.read(into: bufP, deadline: -1)
-        }
-
-        buf = Data(buffer: buffer)
-        return buf
+    public func read() throws -> Buffer {
+//        var buf = Data(count: BATCH_SIZE)
+//        let buffer = try buf.withUnsafeMutableBytes { (p: UnsafeMutablePointer<Byte>) -> UnsafeBufferPointer<Byte> in
+//            let bufP = UnsafeMutableBufferPointer(start: p, count: BATCH_SIZE)
+//            return try self.socket.read(into: bufP, deadline: -1)
+//        }
+//
+//        buf = Data(psBuffer buffer)
+//        return buf
 //        /////////////////////////////////////////////////////////////////////////////////
-//        var buf = try self.socket.read(upTo: BATCH_SIZE, deadline: -1)
+        let buf = try self.socket.read(upTo: BATCH_SIZE, deadline: -1)
 //        return buf.withUnsafeMutableBufferPointer {
 //            let d = Data(bytesNoCopy: UnsafeMutableRawPointer($0.baseAddress!), count: buf.count, deallocator: .none)
-//            return d
+            return buf
 //        }
         
     }

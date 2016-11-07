@@ -39,7 +39,7 @@ enum Formats: Int16 {
     case Describe(name: String)
     case Sync
     case Execute(name: String, maxRowNums: Int32)
-    case Bind(destinationName : String, statementName: String, numberOfParametersFormatCodes: Int16, paramsFormats: [Formats], numberOfParameterValues: Int16, parameters: [(length: Int32, data: Data?)],
+    case Bind(destinationName : String, statementName: String, numberOfParametersFormatCodes: Int16, paramsFormats: [Formats], numberOfParameterValues: Int16, parameters: [(length: Int32, data: Buffer?)],
         numberOfResultsFormatCodes: Int16, resultFormats: [Formats]
     )
     case Flush
@@ -100,7 +100,7 @@ enum Formats: Int16 {
             for i in params {
                 msg.addInt32(i.length)
                 if i.length != -1 {
-                    msg.addData(i.data!)
+                    msg.addBuffer(i.data!)
                 }
             }
             msg.addInt16(numResCodes)

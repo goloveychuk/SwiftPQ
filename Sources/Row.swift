@@ -15,13 +15,13 @@ import Foundation
 
 
 public  class Row {
-    let values:[Data?]
+    let values:[Buffer?]
     let columns: Columns
-    init(_ values: [Data?], columns: Columns) {
+    init(_ values: [Buffer?], columns: Columns) {
         self.values = values
         self.columns = columns
     }
-    subscript(ind: Int) -> Data? {
+    subscript(ind: Int) -> Buffer? {
         return values[ind]
     }
     func val<T: PostgresTypeConvertible>(_ ind: Int) -> T? {
@@ -29,7 +29,7 @@ public  class Row {
             return nil
         }
         
-        return T(fromBytes: x) ////////check oid
+        return T(psBuffer: x) ////////check oid
     }
     var dict: [String: Any] {
         var dict = [String: Any]()
@@ -41,60 +41,60 @@ public  class Row {
             var v : Any!
             switch c.typeOid {
             case .Int4:
-                v = Int(Int32(fromBytes: d))
+                v = Int(Int32(psBuffer: d))
                 
             case .Int2:
-                v = Int(Int16(fromBytes: d)) //todo 64/32 bit systems
+                v = Int(Int16(psBuffer: d)) //todo 64/32 bit systems
             
             case .Int8:
-                v = Int(fromBytes: d)
+                v = Int(psBuffer: d)
                 
             case .Text, .VarChar, .FixedChar:
-                v = String(fromBytes: d)
+                v = String(psBuffer: d)
                 
             case .Bool:
-                v = Bool(fromBytes: d)
+                v = Bool(psBuffer: d)
                 
             case .Timestampz: //todo infinity
-                v = Date(fromBytes: d)
+                v = Date(psBuffer: d)
                 
                 
             case .Timestamp:
-                v = Date(fromBytes: d)
+                v = Date(psBuffer: d)
         
             case .Float4:
-                v = Float64(Float32(fromBytes: d))
+                v = Float64(Float32(psBuffer: d))
                 
             case .Float8:
-                 v = Float64(fromBytes: d)
+                v = Float64(psBuffer: d)
                 
             case .Time:
-                 v = Time(fromBytes: d)
+                v = Time(psBuffer: d)
             case .Date:
-                v = PgDate(fromBytes: d)
+                v = PgDate(psBuffer: d)
             case .Bytea:
                 v = d
             case .TimeTz:
-                v = Time(fromBytes: d)
+                v = Time(psBuffer: d)
             case .UUID:
-                v = UUID(fromBytes: d)
+                v = UUID(psBuffer: d)
             case .Money:
-                v = Money(fromBytes: d)
+                v = Money(psBuffer: d)
             case .Json:
                 let l = Array(d)
                 v = "hz"
             case .Decimal:
                 let l = Array(d)
-                let n = Int16(fromBytes: d.subdata(in: 0..<2))
-                let weight = Int16(fromBytes: d.subdata(in: 2..<4))
-                let sign = UInt16(fromBytes: d.subdata(in: 4..<6))
-                let scale = Int16(fromBytes: d.subdata(in: 6..<8))
+                let n = Int16(psBuffer: d[0..<2])
+                let weight = Int16(psBuffer: d[2..<4])
+                let sign = UInt16(psBuffer: d[4..<6])
+                let scale = Int16(psBuffer: d[6..<8])
                 var ind = 8
                 
                 var digits = [Int16]()
             
                 for i in 0..<Int(n) {
-                    let digit = Int16(fromBytes: d.subdata(in: ind..<ind+2))
+                    let digit = Int16(psBuffer: d[ind..<ind+2])
                     digits.append(digit)
                     ind+=2
                 }
@@ -102,7 +102,7 @@ public  class Row {
                 v = "dsa"
                 
             case .ArrInt8:
-                v = PostgresArray<Int64>(fromBytes: d)
+                v = PostgresArray<Int64>(psBuffer: d)
                 
             default:
                 let l = Array(d)

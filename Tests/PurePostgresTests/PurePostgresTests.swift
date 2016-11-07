@@ -57,11 +57,11 @@ class PurePostgresTests: XCTestCase {
         let serial8 = Int(234234234232)
         let serial4 = Int32(90800564)
         let serial2 = Int16(4321)
-//        Decimal(sign: <#T##FloatingPointSign#>, exponent: <#T##Int#>, significand: <#T##Decimal#>)
+
         let decimal = Float64(-321.1231211) //to decimal
         let money = Money(base: 213, frac: 45)
         let boolean = true
-        let bytea = Data(bytes: [3,2, 123])
+        let bytea = Buffer([3,2, 123])
         let char_1 = "a"
         let char_10 = "fkdjshwidh"
         let varchar_1 = "c"

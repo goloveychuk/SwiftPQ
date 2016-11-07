@@ -7,30 +7,42 @@
 //
 
 import Foundation
+import Axis
+
+public typealias Buffer = Axis.Buffer
+
+extension Buffer {
+    public mutating func append(_ byte: Byte) {
+        self.append([byte])
+    }
+    mutating func replaceSubrange(_ range: Range<Int>, with: Buffer) {
+        self.bytes.replaceSubrange(range, with: with)
+    }
+}
 
 
 
 class WriteBuffer {
-    fileprivate var buffer: Data
+    fileprivate var buffer: Buffer
     fileprivate var lengthInd: Int = 0
 
     init(_ type: FrontendMessageTypes?) {
-        buffer = Data()
+        buffer = Buffer()
         if let type = type {
             buffer.append(Byte(type.rawValue.value))
             lengthInd = 1
         }
         self.addInt32(0) //preserve for len
     }
-    func pack() -> Data {
-        self.buffer.replaceSubrange(lengthInd..<lengthInd+MemoryLayout<Int32>.size, with: Int32(self.buffer.count-lengthInd).toBytes)//should be faster
+    func pack() -> Buffer {
+        self.buffer.replaceSubrange(lengthInd..<lengthInd+MemoryLayout<Int32>.size, with: Int32(self.buffer.count-lengthInd).toBuffer)//should be faster
         return self.buffer
     }
     func addInt32(_ v : Int32) {
-        self.buffer.append(v.toBytes)
+        self.buffer.append(v.toBuffer)
     }
     func addInt16(_ v: Int16) {
-        self.buffer.append(v.toBytes)
+        self.buffer.append(v.toBuffer)
     }
     func addLen() {
         lengthInd = self.buffer.count
@@ -39,15 +51,15 @@ class WriteBuffer {
     func addByte1(_ v: Byte) {
         buffer.append(v)
     }
-    func addData(_ v: Data) {
+    func addBuffer(_ v: Buffer) {
         buffer.append(v)
     }
     func addString(_ v : String) {
-        let bytes = v.data(using: String.Encoding.utf8)
-        if let bytes = bytes {
-            self.buffer.append(contentsOf: bytes)
-            addNull()
-        }
+        
+        
+        self.buffer.append(v.toBuffer)
+        addNull()
+        
     }
     func addNull() {
         self.buffer.append(0)
@@ -61,15 +73,15 @@ enum BufferErrors: Error {
 let MSG_HEAD_LEN = 1+MemoryLayout<Int32>.size
 
 class ReadBuffer {
-    fileprivate var buffer: Data
+    fileprivate var buffer: Buffer
     fileprivate var cursor: Int = 0
     
     init() {
-        buffer = Data()
+        buffer = Buffer()
     }
-    func add(_ d: Data) {
+    func add(_ d: Buffer) {
         if left > 0 {
-            self.buffer = self.buffer.subdata(in: cursor..<buffer.count)
+            self.buffer = self.buffer[cursor..<buffer.count]
             self.buffer.append(d)
         } else {
             self.buffer = d
@@ -110,31 +122,31 @@ class ReadBuffer {
         cursor += 1
         return buffer[cursor-1]
     }
-    func getBytes(_ count: Int) -> Data {
-        let d = buffer.subdata(in: cursor..<cursor+count)
+    func getBytes(_ count: Int) -> Buffer {
+        let d = buffer[cursor..<cursor+count]
         cursor += count
         return d
     }
     func getInt32() -> Int32 {
         let newC = cursor+MemoryLayout<Int32>.size
         defer { cursor = newC }
-        return Int32(fromBytes: buffer.subdata(in: cursor..<newC))
+        return Int32(psBuffer: buffer[cursor..<newC])
     }
     func getInt16() -> Int16 {
         let newC = cursor+MemoryLayout<Int16>.size
         defer { cursor = newC }
-        return Int16(fromBytes: buffer.subdata(in: cursor..<newC))
+        return Int16(psBuffer: buffer[cursor..<newC])
     }
     func getString() -> String {
         var newCursor = cursor
         while buffer[newCursor] != 0 {
             newCursor += 1
         }
-        let strData = buffer.subdata(in: cursor..<newCursor)
-        let str = String(data: strData, encoding: String.Encoding.utf8)
+        let strData = buffer[cursor..<newCursor]
+        let str = String(psBuffer: strData)
         
         cursor = newCursor + 1
-        return str!
+        return str
     }
     var isNull: Bool {
         return self.buffer[cursor] == 0

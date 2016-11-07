@@ -53,7 +53,7 @@ enum BackendMessages {
     case AuthenticationOk
     case AuthenticationKerberosV5
     case AuthenticationCleartextPassword
-    case AuthenticationMD5Password(salt: Data)
+    case AuthenticationMD5Password(salt: Buffer)
     case AuthenticationSCMCredential
     case AuthenticationGSS
     case AuthenticationSSPI
@@ -68,7 +68,7 @@ enum BackendMessages {
     case ParameterDescription(number: Int16, oids: [Int32])
     case RowDescription(fieldsNum: Int16, fields: [Field])
     case BindComplete
-    case DataRow(num: Int16, values: [Data?])
+    case DataRow(num: Int16, values: [Buffer?])
     case NoticeResponse(pairs: [(Byte, String)])
     case NoData
     
@@ -148,10 +148,10 @@ enum BackendMessages {
             self = .BindComplete
         case .DataRow:
             let num = buf.getInt16()
-            var values = [Data?]()
+            var values = [Buffer?]()
             for _ in 0..<num {
                 let len = buf.getInt32()
-                var d : Data? = nil
+                var d : Buffer? = nil
                 if len != -1 {
                     d = buf.getBytes(Int(len))
                     //print(String(data: d!, encoding: String.Encoding.utf8))

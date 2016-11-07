@@ -9,7 +9,7 @@
 import Foundation
 import CryptoSwift
 
-typealias Byte = UInt8
+public typealias Byte = UInt8
 
 enum ProtocolErrors {
     case UnexpectedResp(BackendMessages)
@@ -124,9 +124,9 @@ extension Protocol {
             throw PostgresErrors.ProtocolError(.UnexpectedResp(resp))
         }
     }
-    func authMd5(user: String, password: String, salt: Data) throws{
+    func authMd5(user: String, password: String, salt: Buffer) throws{
         let c1 = (password + user).md5()
-        let pass = "md5" + (c1.utf8+salt).md5().toHexString()
+        let pass = "md5" + (c1.utf8+salt.bytes).md5().toHexString()
         let msg = FrontendMessages.PasswordMessage(password: pass)
         try socket.write(msg)
         try socket.flush()
@@ -182,7 +182,7 @@ extension Protocol {
         throw PostgresErrors.ProtocolError(.Other("didn't received row description"))
         
     }
-    func bind(statementName: String, dest: String, args: [Data?]) throws {
+    func bind(statementName: String, dest: String, args: [Buffer?]) throws {
         let params = args.map { (Int32($0?.count ?? -1), $0) }
         let msg = FrontendMessages.Bind(destinationName: dest, statementName: statementName, numberOfParametersFormatCodes: 1, paramsFormats: [.Binary], numberOfParameterValues: Int16(args.count), parameters: params, numberOfResultsFormatCodes: 1, resultFormats: [.Binary])
         try socket.write(msg, .Flush)
