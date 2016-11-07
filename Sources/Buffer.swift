@@ -13,7 +13,7 @@ public typealias Buffer = Axis.Buffer
 
 extension Buffer {
     public mutating func append(_ byte: Byte) {
-        self.append([byte])
+        self.bytes.append(byte)
     }
     mutating func replaceSubrange(_ range: Range<Int>, with: Buffer) {
         self.bytes.replaceSubrange(range, with: with)
@@ -22,7 +22,7 @@ extension Buffer {
 
 
 
-class WriteBuffer {
+struct WriteBuffer {
     fileprivate var buffer: Buffer
     fileprivate var lengthInd: Int = 0
 
@@ -35,33 +35,34 @@ class WriteBuffer {
         self.addInt32(0) //preserve for len
     }
     func pack() -> Buffer {
-        self.buffer.replaceSubrange(lengthInd..<lengthInd+MemoryLayout<Int32>.size, with: Int32(self.buffer.count-lengthInd).toBuffer)//should be faster
-        return self.buffer
+        var buf = self
+        buf.buffer.replaceSubrange(lengthInd..<lengthInd+MemoryLayout<Int32>.size, with: Int32(self.buffer.count-lengthInd).toBuffer)//should be faster
+        return buf.buffer
     }
-    func addInt32(_ v : Int32) {
+    mutating func addInt32(_ v : Int32) {
         self.buffer.append(v.toBuffer)
     }
-    func addInt16(_ v: Int16) {
+    mutating func addInt16(_ v: Int16) {
         self.buffer.append(v.toBuffer)
     }
-    func addLen() {
+    mutating func addLen() {
         lengthInd = self.buffer.count
         addInt32(0)
     }
-    func addByte1(_ v: Byte) {
+    mutating func addByte1(_ v: Byte) {
         buffer.append(v)
     }
-    func addBuffer(_ v: Buffer) {
+    mutating func addBuffer(_ v: Buffer) {
         buffer.append(v)
     }
-    func addString(_ v : String) {
+    mutating func addString(_ v : String) {
         
         
         self.buffer.append(v.toBuffer)
         addNull()
         
     }
-    func addNull() {
+    mutating  func addNull() {
         self.buffer.append(0)
     }
 }
@@ -72,14 +73,14 @@ enum BufferErrors: Error {
 
 let MSG_HEAD_LEN = 1+MemoryLayout<Int32>.size
 
-class ReadBuffer {
+struct ReadBuffer {
     fileprivate var buffer: Buffer
     fileprivate var cursor: Int = 0
     
     init() {
         buffer = Buffer()
     }
-    func add(_ d: Buffer) {
+    mutating func add(_ d: Buffer) {
         if left > 0 {
             self.buffer = self.buffer[cursor..<buffer.count]
             self.buffer.append(d)
@@ -90,7 +91,7 @@ class ReadBuffer {
         cursor = 0
         
     }
-    func skip(_ bytes: Int = 1) {
+    mutating func skip(_ bytes: Int = 1) {
         cursor += bytes
     }
     var left: Int { return buffer.count - cursor }
@@ -101,7 +102,7 @@ class ReadBuffer {
 //        cursor = 0
 //        buffer = Data()
 //    }
-    func unpack() throws -> BackendMsgTypes? {
+    mutating func unpack() throws -> BackendMsgTypes? {
         let bytesLeft = buffer.count - cursor
         
         guard bytesLeft >= MSG_HEAD_LEN else {
@@ -118,26 +119,26 @@ class ReadBuffer {
         }
         return msgType
     }
-    func getByte1() -> Byte {
+    mutating func getByte1() -> Byte {
         cursor += 1
         return buffer[cursor-1]
     }
-    func getBytes(_ count: Int) -> Buffer {
+    mutating func getBytes(_ count: Int) -> Buffer {
         let d = buffer[cursor..<cursor+count]
         cursor += count
         return d
     }
-    func getInt32() -> Int32 {
+    mutating func getInt32() -> Int32 {
         let newC = cursor+MemoryLayout<Int32>.size
         defer { cursor = newC }
         return Int32(psBuffer: buffer[cursor..<newC])
     }
-    func getInt16() -> Int16 {
+    mutating func getInt16() -> Int16 {
         let newC = cursor+MemoryLayout<Int16>.size
         defer { cursor = newC }
         return Int16(psBuffer: buffer[cursor..<newC])
     }
-    func getString() -> String {
+    mutating func getString() -> String {
         var newCursor = cursor
         while buffer[newCursor] != 0 {
             newCursor += 1

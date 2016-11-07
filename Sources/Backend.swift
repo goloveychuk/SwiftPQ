@@ -72,7 +72,7 @@ enum BackendMessages {
     case NoticeResponse(pairs: [(Byte, String)])
     case NoData
     
-    init(msgType : BackendMsgTypes, buf: ReadBuffer) throws {
+    init(msgType : BackendMsgTypes, buf: inout ReadBuffer) throws {
         
         
         switch msgType {

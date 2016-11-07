@@ -105,6 +105,9 @@ class PurePostgresTests: XCTestCase {
         
         try! conn.execute("insert into testbigamount(d1, d2, d3) select $1, $2, $3 from ( select  generate_series(1,$4)  ) q ", args: [d1, d2, d3, COUNT])
         
+    }
+    func testSelectBigAmount2() throws {
+        let COUNT = 1_000_000
         let st = try! conn.execute("select * from testbigamount")
         
         var n = 0

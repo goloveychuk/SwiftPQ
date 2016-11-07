@@ -14,7 +14,7 @@ import Foundation
 
 
 
-public  class Row {
+public  struct Row {
     let values:[Buffer?]
     let columns: Columns
     init(_ values: [Buffer?], columns: Columns) {

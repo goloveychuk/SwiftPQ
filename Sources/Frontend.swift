@@ -47,7 +47,7 @@ enum Formats: Int16 {
     func buf() -> WriteBuffer {
         switch self {
         case let .StartupMessage(user: user, database: database):
-            let msg = WriteBuffer(nil)
+            var msg = WriteBuffer(nil)
             msg.addInt32(PROTOCOL_VERSION)
             msg.addString("user")
             msg.addString(user)
@@ -59,12 +59,12 @@ enum Formats: Int16 {
             return msg
             
         case let .PasswordMessage(password: password):
-            let msg = WriteBuffer(.PasswordMessage)
+            var msg = WriteBuffer(.PasswordMessage)
             msg.addString(password)
             return msg
             
         case let .Parse(destination: dest, query: q, numberOfParameters: num, argsOids: oids):
-            let msg = WriteBuffer(.Parse)
+            var msg = WriteBuffer(.Parse)
             msg.addString(dest)
             msg.addString(q)
             msg.addInt16(num)
@@ -74,7 +74,7 @@ enum Formats: Int16 {
             return msg
             
         case let .Describe(name: name):
-            let msg = WriteBuffer(.Describe)
+            var msg = WriteBuffer(.Describe)
             msg.addByte1(Byte(ascii: "S"))
             msg.addString(name)
             return msg
@@ -82,14 +82,14 @@ enum Formats: Int16 {
             let msg = WriteBuffer(.Sync)
             return msg
         case let .Execute(name: name, maxRowNums: mx):
-            let msg = WriteBuffer(.Execute)
+            var msg = WriteBuffer(.Execute)
             msg.addString(name)
             msg.addInt32(mx)
             return msg
         case let .Bind(destinationName: dest, statementName: st,
         numberOfParametersFormatCodes: numParamCodes, paramsFormats: paramsFormats, numberOfParameterValues: numParamVals, parameters: params,
         numberOfResultsFormatCodes: numResCodes, resultFormats: resFormats):
-            let msg = WriteBuffer(.Bind)
+            var msg = WriteBuffer(.Bind)
             msg.addString(dest)
             msg.addString(st)
             msg.addInt16(numParamCodes)

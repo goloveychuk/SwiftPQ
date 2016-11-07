@@ -53,7 +53,7 @@ class Protocol {
             msgType = try buffer.unpack()
         }
         
-        let msg = try! BackendMessages(msgType: msgType!, buf: buffer)
+        let msg = try! BackendMessages(msgType: msgType!, buf: &buffer)
         //print("debug, msg", msg)
         return msg
     }
