@@ -7,18 +7,40 @@
 //
 
 import Foundation
-import Axis
+#if os(Linux)
+    import Glibc
+#else
+    import Darwin
+#endif
 
-public typealias Buffer = Axis.Buffer
+public typealias Buffer = Array<Byte>
 
-extension Buffer {
-    public mutating func append(_ byte: Byte) {
-        self.bytes.append(byte)
+extension Array {
+    public func copyBytes(to pointer: UnsafeMutableBufferPointer<Byte>) {
+        guard pointer.count > 0 else {
+            return
+        }
+        
+        precondition(self.endIndex >= 0)
+        precondition(self.endIndex <= pointer.count, "The pointer is not large enough")
+        
+        _ = self.withUnsafeBufferPointer {
+            memcpy(pointer.baseAddress!, $0.baseAddress!, self.count)
+        }
     }
-    mutating func replaceSubrange(_ range: Range<Int>, with: Buffer) {
-        self.bytes.replaceSubrange(range, with: with)
+    public func copyBytes(to pointer: UnsafeMutablePointer<Byte>, count: Int) {
+        copyBytes(to: UnsafeMutableBufferPointer(start: pointer, count: count))
     }
+
 }
+//extension Buffer {
+//    public mutating func append(_ byte: Byte) {
+//        self.bytes.append(byte)
+//    }
+//    mutating func replaceSubrange(_ range: Range<Int>, with: Buffer) {
+//        self.bytes.replaceSubrange(range, with: with)
+//    }
+//}
 
 
 
@@ -40,10 +62,10 @@ struct WriteBuffer {
         return buf.buffer
     }
     mutating func addInt32(_ v : Int32) {
-        self.buffer.append(v.toBuffer)
+        self.buffer.append(contentsOf: v.toBuffer)
     }
     mutating func addInt16(_ v: Int16) {
-        self.buffer.append(v.toBuffer)
+        self.buffer.append(contentsOf: v.toBuffer)
     }
     mutating func addLen() {
         lengthInd = self.buffer.count
@@ -53,12 +75,12 @@ struct WriteBuffer {
         buffer.append(v)
     }
     mutating func addBuffer(_ v: Buffer) {
-        buffer.append(v)
+        buffer.append(contentsOf: v)
     }
     mutating func addString(_ v : String) {
         
         
-        self.buffer.append(v.toBuffer)
+        self.buffer.append(contentsOf: v.toBuffer)
         addNull()
         
     }
@@ -82,8 +104,8 @@ struct ReadBuffer {
     }
     mutating func add(_ d: Buffer) {
         if left > 0 {
-            self.buffer = self.buffer[cursor..<buffer.count]
-            self.buffer.append(d)
+            self.buffer = Buffer(self.buffer[cursor..<buffer.count])
+            self.buffer.append(contentsOf: d)
         } else {
             self.buffer = d
         }
@@ -126,17 +148,17 @@ struct ReadBuffer {
     mutating func getBytes(_ count: Int) -> Buffer {
         let d = buffer[cursor..<cursor+count]
         cursor += count
-        return d
+        return Buffer(d)
     }
     mutating func getInt32() -> Int32 {
         let newC = cursor+MemoryLayout<Int32>.size
         defer { cursor = newC }
-        return Int32(psBuffer: buffer[cursor..<newC])
+        return Int32(psBuffer: Buffer(buffer[cursor..<newC]))
     }
     mutating func getInt16() -> Int16 {
         let newC = cursor+MemoryLayout<Int16>.size
         defer { cursor = newC }
-        return Int16(psBuffer: buffer[cursor..<newC])
+        return Int16(psBuffer: Buffer(buffer[cursor..<newC]))
     }
     mutating func getString() -> String {
         var newCursor = cursor
@@ -144,7 +166,7 @@ struct ReadBuffer {
             newCursor += 1
         }
         let strData = buffer[cursor..<newCursor]
-        let str = String(psBuffer: strData)
+        let str = String(psBuffer: Buffer(strData))
         
         cursor = newCursor + 1
         return str

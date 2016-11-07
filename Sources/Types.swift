@@ -71,6 +71,7 @@ public protocol IntegerPostgresType: PostgresArrayConvertible {
 func readPrimitiveMemory<T>(psBuffer: Buffer) -> T {
     let v = UnsafeMutablePointer<T>.allocate(capacity: 1)
     v.withMemoryRebound(to: Byte.self, capacity: MemoryLayout<T>.size) { //todo read docs
+//        psBuffer.
         psBuffer.copyBytes(to: $0, count: MemoryLayout<T>.size)
     }
     return v.pointee
@@ -125,7 +126,7 @@ extension String: PostgresTypeConvertible {
     }
     public  var oid: Oid { return Oid.Text }
     public var toBuffer: Buffer {
-        return Buffer(self)
+        return Buffer(self.utf8)
     }
 }
 
@@ -198,7 +199,7 @@ extension Time: PostgresTypeConvertible {
         if buffer.count == 12 {
             let tD = buffer[0..<8]
             //let tzD = Buffer[8..<12] //todo timezones. Timezones are everywhere
-            let microseconds = Int64(psBuffer: tD)
+            let microseconds = Int64(psBuffer: Buffer(tD))
             self.init(Int(microseconds))
             
         } else {
@@ -226,7 +227,7 @@ extension Time: PostgresTypeConvertible {
         var d = microseconds.toBuffer
         if let _ = tz {
             let tzd = Int32(0)
-            d.append(tzd.toBuffer)
+            d.append(contentsOf: tzd.toBuffer)
         }
         return d
         
@@ -264,16 +265,7 @@ extension UUID: PostgresTypeConvertible {
     
 }
 
-extension Buffer: PostgresTypeConvertible {
-    public var toBuffer: Buffer {
-        return self
-    }
-    public  var oid: Oid { return Oid.Bytea }
-    
-    public init(psBuffer buffer: Buffer) {
-        self = buffer
-    }
-}
+
 
 
 public struct Money: PostgresTypeConvertible {
@@ -329,13 +321,13 @@ public struct PostgresArray<T: PostgresArrayConvertible>: PostgresTypeConvertibl
         let typeOid = T.oid.rawValue.toBuffer
         let length = Int32(self.buffer.count).toBuffer
         let startingDimInd = Int32(0).toBuffer
-        var buffer = Buffer(dimension.bytes+notNull.bytes+typeOid.bytes+length.bytes+startingDimInd.bytes)
+        var buffer = dimension+notNull+typeOid+length+startingDimInd
         
         for i in self.buffer {
             let d = i.toBuffer
             let len_t = Int32(d.count).toBuffer
-            buffer.append(len_t)
-            buffer.append(d)
+            buffer.append(contentsOf: len_t)
+            buffer.append(contentsOf: d)
         }
         print(buffer)
         return buffer
@@ -349,17 +341,17 @@ public struct PostgresArray<T: PostgresArrayConvertible>: PostgresTypeConvertibl
         }
     }
     public init(psBuffer d: Buffer) {
-        let dimension = Int32(psBuffer: d[0..<4])
-        let notNull = Int32(psBuffer: d[4..<8])
-        let typeOid = Int32(psBuffer: d[8..<12])
-        let length = Int32(psBuffer: d[12..<16])
-        let startingDimInd = Int32(psBuffer: d[16..<20])
+        let dimension = Int32(psBuffer: Buffer(d[0..<4]))
+        let notNull = Int32(psBuffer: Buffer(d[4..<8]))
+        let typeOid = Int32(psBuffer: Buffer(d[8..<12]))
+        let length = Int32(psBuffer: Buffer(d[12..<16]))
+        let startingDimInd = Int32(psBuffer: Buffer(d[16..<20]))
         var buffer = Array<T>()
         var ind = 20
         for i in 0..<Int(length) {
-            let t_len = Int(Int32(psBuffer: d[ind..<ind+4]))
+            let t_len = Int(Int32(psBuffer: Buffer(d[ind..<ind+4])))
             ind += 4
-            let el = T(psBuffer: d[ind..<ind+t_len])
+            let el = T(psBuffer: Buffer(d[ind..<ind+t_len]))
             ind += t_len
             buffer.append(el)
         }

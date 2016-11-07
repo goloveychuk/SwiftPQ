@@ -61,7 +61,8 @@ class PurePostgresTests: XCTestCase {
         let decimal = Float64(-321.1231211) //to decimal
         let money = Money(base: 213, frac: 45)
         let boolean = true
-        let bytea = Buffer([3,2, 123])
+//        let bytea = Buffer([3,2, 123])
+        let bytea = "sd"
         let char_1 = "a"
         let char_10 = "fkdjshwidh"
         let varchar_1 = "c"

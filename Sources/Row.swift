@@ -85,16 +85,16 @@ public  struct Row {
                 v = "hz"
             case .Decimal:
                 let l = Array(d)
-                let n = Int16(psBuffer: d[0..<2])
-                let weight = Int16(psBuffer: d[2..<4])
-                let sign = UInt16(psBuffer: d[4..<6])
-                let scale = Int16(psBuffer: d[6..<8])
+                let n = Int16(psBuffer: Buffer(d[0..<2]))
+                let weight = Int16(psBuffer: Buffer(d[2..<4]))
+                let sign = UInt16(psBuffer: Buffer(d[4..<6]))
+                let scale = Int16(psBuffer: Buffer(d[6..<8]))
                 var ind = 8
                 
                 var digits = [Int16]()
             
                 for i in 0..<Int(n) {
-                    let digit = Int16(psBuffer: d[ind..<ind+2])
+                    let digit = Int16(psBuffer: Buffer(d[ind..<ind+2]))
                     digits.append(digit)
                     ind+=2
                 }

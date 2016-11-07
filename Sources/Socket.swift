@@ -23,10 +23,11 @@ class LibmillSocket: Socket {
     let socket: TCPStream
     
     public func write(_ buffer: Buffer) throws {
-        try buffer.withUnsafeBytes { (p: UnsafePointer<Byte>) -> Void in
-        let bp = UnsafeBufferPointer(start: p, count: buffer.count)
-        try self.socket.write(bp, deadline: -1)
-    }
+        try buffer.withUnsafeBufferPointer { bp in
+//        try buffer.withUnsafeBytes { (p: UnsafePointer<Byte>) -> Void in
+//        let bp = UnsafeBufferPointer(start: p, count: buffer.count)
+            try self.socket.write(bp, deadline: -1)
+        }
     }
     public func read() throws -> Buffer {
 //        var buf = Data(count: BATCH_SIZE)
@@ -41,7 +42,7 @@ class LibmillSocket: Socket {
         let buf = try self.socket.read(upTo: BATCH_SIZE, deadline: -1)
 //        return buf.withUnsafeMutableBufferPointer {
 //            let d = Data(bytesNoCopy: UnsafeMutableRawPointer($0.baseAddress!), count: buf.count, deallocator: .none)
-            return buf
+            return buf.bytes
 //        }
         
     }

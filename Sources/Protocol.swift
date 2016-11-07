@@ -126,7 +126,7 @@ extension Protocol {
     }
     func authMd5(user: String, password: String, salt: Buffer) throws{
         let c1 = (password + user).md5()
-        let pass = "md5" + (c1.utf8+salt.bytes).md5().toHexString()
+        let pass = "md5" + (c1.utf8+salt).md5().toHexString()
         let msg = FrontendMessages.PasswordMessage(password: pass)
         try socket.write(msg)
         try socket.flush()
